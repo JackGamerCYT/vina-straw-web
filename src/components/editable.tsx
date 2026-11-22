@@ -83,7 +83,8 @@ export function EditProvider({ admin, texts, media, children }: { admin: boolean
           {!editing ? (
             <>
               <span className="hidden px-3 text-white/60 sm:inline">Quản trị</span>
-              <Link href="/admin" className="whitespace-nowrap rounded-full px-3 py-1.5 hover:bg-white/10">Đơn hàng</Link>
+              <Link href="/admin" className="whitespace-nowrap rounded-full px-3 py-1.5 hover:bg-white/10">Quản trị</Link>
+              <Link href="/admin/don-hang" className="whitespace-nowrap rounded-full px-3 py-1.5 hover:bg-white/10">Đơn hàng</Link>
               <Link href="/admin/san-pham" className="whitespace-nowrap rounded-full px-3 py-1.5 hover:bg-white/10">Sản phẩm</Link>
               <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-straw-500 px-3.5 py-1.5 font-semibold text-soil-900 hover:bg-straw-300"><Pencil className="h-3.5 w-3.5" /> Sửa trực tiếp</button>
             </>

@@ -19,7 +19,9 @@ export type Product = {
 
 export type OrderItem = { productId: number; name: string; qty: number; unit: string; price: number };
 
-export type OrderStatus = "NEW" | "QUOTING" | "QUOTED" | "CONFIRMED" | "DONE" | "CANCELLED";
+export type OrderStatus = "NEW" | "QUOTING" | "QUOTED" | "CONFIRMED" | "SHIPPING" | "DONE" | "CANCELLED";
+export type PaymentStatus = "UNPAID" | "PAID" | "REFUNDED";
+export type PaymentMethod = "" | "COD" | "BANK";
 
 export type Order = {
   id: number;
@@ -39,6 +41,11 @@ export type Order = {
   adminNote: string;
   createdAt: string;
   updatedAt: string;
+  customerId: number | null;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  shippingFee: number;
+  subtotal: number;
 };
 
 export type Settings = {
@@ -61,6 +68,7 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
   QUOTING: "Đang báo giá",
   QUOTED: "Đã báo giá",
   CONFIRMED: "Đã xác nhận",
+  SHIPPING: "Đang giao",
   DONE: "Hoàn tất",
   CANCELLED: "Đã huỷ",
 };
@@ -82,3 +90,47 @@ export type AdminUser = {
 };
 export const ROLE_LABEL: Record<AdminRole, string> = { OWNER: "Chủ trang", EDITOR: "Biên tập" };
 export const ADMIN_STATUS_LABEL: Record<AdminStatus, string> = { PENDING: "Chờ duyệt", ACTIVE: "Đang hoạt động", LOCKED: "Đã khoá" };
+
+/** Đơn tạo từ giỏ hàng (khác với yêu cầu báo giá). */
+export const CHECKOUT_KIND = "Mua hàng";
+export const PAYMENT_LABEL: Record<PaymentStatus, string> = { UNPAID: "Chưa thanh toán", PAID: "Đã thanh toán", REFUNDED: "Đã hoàn tiền" };
+export const METHOD_LABEL: Record<Exclude<PaymentMethod, "">, string> = { COD: "Thanh toán khi nhận hàng (COD)", BANK: "Chuyển khoản ngân hàng" };
+
+export type Customer = {
+  id: number;
+  email: string;
+  name: string;
+  phone: string;
+  address: string;
+  company: string;
+  pass: string;
+  status: "ACTIVE" | "LOCKED";
+  createdAt: string;
+  lastLogin: string | null;
+};
+
+export type Media = { id: number; url: string; name: string; size: number; createdAt: string };
+
+/** Cấu hình bán hàng, chủ trang sửa ở /admin/cai-dat. */
+export type Shop = {
+  shipFee: number;
+  freeShipOver: number;
+  cod: boolean;
+  bankName: string;
+  bankAccount: string;
+  bankHolder: string;
+  shipNote: string;
+};
+export const DEFAULT_SHOP: Shop = {
+  shipFee: 0,
+  freeShipOver: 0,
+  cod: true,
+  bankName: "",
+  bankAccount: "",
+  bankHolder: "",
+  shipNote: "Phí giao hàng được xác nhận khi chúng tôi gọi lại chốt đơn.",
+};
+
+export function shippingFor(shop: Shop, subtotal: number) {
+  return shop.freeShipOver > 0 && subtotal >= shop.freeShipOver ? 0 : shop.shipFee;
+}

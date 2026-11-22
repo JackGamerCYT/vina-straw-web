@@ -24,6 +24,8 @@ export function Footer({ s }: { s: Settings }) {
           <p className="font-display text-lg font-semibold text-white">Khách hàng</p>
           <ul className="mt-4 space-y-2.5">
             <li><Link className="link-draw hover:text-white" href="/bao-gia">Nhận báo giá, đặt hàng</Link></li>
+            <li><Link className="link-draw hover:text-white" href="/gio-hang">Giỏ hàng</Link></li>
+            <li><Link className="link-draw hover:text-white" href="/tai-khoan">Tài khoản của tôi</Link></li>
             <li><Link className="link-draw hover:text-white" href="/don-hang">Tra cứu và sửa đơn</Link></li>
             <li><Link className="link-draw hover:text-white" href="/#phim">Phim giới thiệu</Link></li>
           </ul>

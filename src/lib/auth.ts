@@ -44,9 +44,10 @@ export async function verifyPassword(pw: string, stored: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+/** HMAC bằng khoá phiên; dùng chung cho phiên quản trị và phiên khách hàng. */
+export const hmac = async (text: string) => createHmac("sha256", await secret()).update(text).digest("hex");
 // Đổi mật khẩu thì phiên cũ hết hạn: chữ ký gắn với đuôi mã băm mật khẩu.
-const sign = async (uid: number, exp: number, pass: string) =>
-  createHmac("sha256", await secret()).update(`${uid}.${exp}.${pass.slice(-16)}`).digest("hex");
+const sign = (uid: number, exp: number, pass: string) => hmac(`${uid}.${exp}.${pass.slice(-16)}`);
 
 export async function startSession(u: AdminUser) {
   const exp = Date.now() + DAYS * 86400_000;

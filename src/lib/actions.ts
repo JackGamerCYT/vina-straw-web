@@ -6,7 +6,7 @@ import * as db from "./db";
 import { endSession, isAdmin, requireAdmin } from "./auth";
 import { storeImages } from "./upload";
 import { slugify } from "./format";
-import { EDITABLE, ORDER_KINDS, type OrderItem, type OrderStatus, type Settings, type Spec } from "./types";
+import { CHECKOUT_KIND, EDITABLE, ORDER_KINDS, type OrderItem, type OrderStatus, type PaymentStatus, type Settings, type Spec } from "./types";
 
 export type FormState = { ok?: boolean; error?: string; code?: string; token?: string } | undefined;
 
@@ -61,6 +61,7 @@ export async function updateMyOrder(_: FormState, f: FormData): Promise<FormStat
   const code = str(f, "code", 20), token = str(f, "token", 64);
   const order = await db.getOrderByCode(code);
   if (!order || order.token !== token) return { error: "Liên kết chỉnh sửa không hợp lệ." };
+  if (order.kind === CHECKOUT_KIND) return { error: "Đơn mua hàng không sửa trực tuyến được. Hãy liên hệ cửa hàng để điều chỉnh." };
   if (!EDITABLE.includes(order.status)) return { error: "Đơn đã được xác nhận nên không sửa được nữa. Hãy liên hệ để điều chỉnh." };
   const r = await readOrderForm(f);
   if ("error" in r) return { error: r.error };
@@ -157,18 +158,21 @@ export async function saveSettingsAction(_: FormState, f: FormData): Promise<For
 
 export async function updateOrderAdminAction(f: FormData) {
   await requireAdmin();
+  const ps = String(f.get("paymentStatus") || "UNPAID");
   await db.updateOrderAdmin(Number(f.get("id")), {
     status: String(f.get("status")) as OrderStatus,
     quote: str(f, "quote", 2000),
     adminNote: str(f, "adminNote", 2000),
+    paymentStatus: (["UNPAID", "PAID", "REFUNDED"].includes(ps) ? ps : "UNPAID") as PaymentStatus,
+    shippingFee: Math.max(0, Math.floor(Number(f.get("shippingFee") || 0))),
   });
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
 }
 
 export async function deleteOrderAction(f: FormData) {
   await requireAdmin();
   await db.deleteOrder(Number(f.get("id")));
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
 }
 
 export async function adminCheck() {

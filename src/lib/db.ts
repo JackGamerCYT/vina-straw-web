@@ -1,19 +1,27 @@
 import "server-only";
 import { neon } from "@neondatabase/serverless";
 import { DEFAULT_SETTINGS, REAL_SLUGS, SEED_PRODUCTS } from "./seed";
-import type { AdminRole, AdminStatus, AdminUser, Order, OrderItem, OrderStatus, Product, Settings, Spec } from "./types";
+import { DEFAULT_SHOP } from "./types";
+import type { AdminRole, AdminStatus, AdminUser, Customer, Media, Order, OrderItem, OrderStatus, PaymentMethod, PaymentStatus, Product, Settings, Shop, Spec } from "./types";
 
 const URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
-export const hasDatabase = Boolean(URL);
+// Chỉ dùng khi kiểm thử trên máy: Postgres thật chạy trong tiến trình (PGlite).
+const PGLITE = !URL && process.env.PGLITE_DIR ? process.env.PGLITE_DIR : "";
+export const hasDatabase = Boolean(URL || PGLITE);
 
 type Row = Record<string, unknown>;
 const sqlClient = URL ? neon(URL) : null;
+let lite: Promise<{ query: (t: string, p: unknown[]) => Promise<{ rows: unknown[] }> }> | null = null;
 async function q<T = Row>(text: string, params: unknown[] = []): Promise<T[]> {
-  return (await sqlClient!.query(text, params)) as T[];
+  if (sqlClient) return (await sqlClient.query(text, params)) as T[];
+  const gl = globalThis as unknown as { __vsLite?: typeof lite };
+  if (!gl.__vsLite) gl.__vsLite = import(/* webpackIgnore: true */ "@electric-sql/pglite").then(({ PGlite }) => new PGlite(PGLITE));
+  lite = gl.__vsLite;
+  return (await (await lite!).query(text, params)).rows as T[];
 }
 
 /* ───────── Bộ nhớ tạm khi chưa nối Postgres (chỉ để xem thử) ───────── */
-type Mem = { products: Product[]; orders: Order[]; settings: Settings; seq: number; admins: AdminUser[]; kv: Record<string, unknown> };
+type Mem = { products: Product[]; orders: Order[]; settings: Settings; seq: number; admins: AdminUser[]; kv: Record<string, unknown>; customers: Customer[]; media: Media[] };
 const g = globalThis as unknown as { __vsMem?: Mem; __vsReady?: Promise<void> };
 function mem(): Mem {
   if (!g.__vsMem) {
@@ -24,6 +32,8 @@ function mem(): Mem {
       seq: 100,
       admins: [],
       kv: {},
+      customers: [],
+      media: [],
     };
   }
   return g.__vsMem;
@@ -48,6 +58,17 @@ async function init() {
     id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, name TEXT NOT NULL, pass TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'EDITOR', status TEXT NOT NULL DEFAULT 'PENDING',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(), last_login TIMESTAMPTZ)`);
+  await q(`CREATE TABLE IF NOT EXISTS customers (
+    id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, name TEXT NOT NULL, phone TEXT NOT NULL DEFAULT '',
+    address TEXT NOT NULL DEFAULT '', company TEXT NOT NULL DEFAULT '', pass TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'ACTIVE', created_at TIMESTAMPTZ NOT NULL DEFAULT now(), last_login TIMESTAMPTZ)`);
+  await q(`CREATE TABLE IF NOT EXISTS media (
+    id SERIAL PRIMARY KEY, url TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', size INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+  for (const col of [
+    "customer_id INTEGER", "payment_method TEXT NOT NULL DEFAULT ''", "payment_status TEXT NOT NULL DEFAULT 'UNPAID'",
+    "shipping_fee INTEGER NOT NULL DEFAULT 0", "subtotal INTEGER NOT NULL DEFAULT 0",
+  ]) await q(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ${col}`);
   const [{ n }] = await q<{ n: number }>(`SELECT count(*)::int AS n FROM products`);
   if (n === 0) {
     for (const p of SEED_PRODUCTS) {
@@ -112,6 +133,9 @@ const toOrder = (r: Row): Order => ({
   items: (r.items as OrderItem[]) ?? [], note: String(r.note), images: (r.images as string[]) ?? [],
   status: r.status as OrderStatus, quote: String(r.quote), adminNote: String(r.admin_note),
   createdAt: new Date(r.created_at as string).toISOString(), updatedAt: new Date(r.updated_at as string).toISOString(),
+  customerId: r.customer_id == null ? null : Number(r.customer_id),
+  paymentMethod: (r.payment_method ?? "") as PaymentMethod, paymentStatus: (r.payment_status ?? "UNPAID") as PaymentStatus,
+  shippingFee: Number(r.shipping_fee ?? 0), subtotal: Number(r.subtotal ?? 0),
 });
 
 /* ───────── Sản phẩm ───────── */
@@ -173,6 +197,7 @@ export async function saveSettings(s: Partial<Settings>) {
 
 /* ───────── Đơn hàng / yêu cầu báo giá ───────── */
 type NewOrder = Pick<Order, "kind" | "name" | "phone" | "email" | "company" | "address" | "items" | "note" | "images">;
+type Pay = Partial<Pick<Order, "customerId" | "paymentMethod" | "shippingFee" | "subtotal">>;
 function makeCode() {
   const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let s = "";
@@ -182,19 +207,26 @@ function makeCode() {
 function makeToken() {
   return crypto.randomUUID().replace(/-/g, "");
 }
-export async function createOrder(o: NewOrder): Promise<Order> {
+export async function createOrder(o: NewOrder, pay: Pay = {}): Promise<Order> {
   await ready();
   const code = makeCode(), token = makeToken();
+  const p = { customerId: pay.customerId ?? null, paymentMethod: pay.paymentMethod ?? "", shippingFee: pay.shippingFee ?? 0, subtotal: pay.subtotal ?? o.items.reduce((t, i) => t + i.qty * i.price, 0) };
   if (!hasDatabase) {
     const m = mem(); const now = new Date().toISOString();
-    const order: Order = { ...o, id: ++m.seq, code, token, status: "NEW", quote: "", adminNote: "", createdAt: now, updatedAt: now };
+    const order: Order = { ...o, ...p, paymentStatus: "UNPAID", id: ++m.seq, code, token, status: "NEW", quote: "", adminNote: "", createdAt: now, updatedAt: now };
     m.orders.unshift(order); return order;
   }
   const [r] = await q(
-    `INSERT INTO orders (code,token,kind,name,phone,email,company,address,items,note,images) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-    [code, token, o.kind, o.name, o.phone, o.email, o.company, o.address, JSON.stringify(o.items), o.note, JSON.stringify(o.images)],
+    `INSERT INTO orders (code,token,kind,name,phone,email,company,address,items,note,images,customer_id,payment_method,shipping_fee,subtotal)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
+    [code, token, o.kind, o.name, o.phone, o.email, o.company, o.address, JSON.stringify(o.items), o.note, JSON.stringify(o.images), p.customerId, p.paymentMethod, p.shippingFee, p.subtotal],
   );
   return toOrder(r);
+}
+export async function listOrdersByCustomer(customerId: number): Promise<Order[]> {
+  await ready();
+  if (!hasDatabase) return mem().orders.filter((o) => o.customerId === customerId);
+  return (await q(`SELECT * FROM orders WHERE customer_id=$1 ORDER BY created_at DESC LIMIT 200`, [customerId])).map(toOrder);
 }
 export async function getOrderByCode(code: string) {
   await ready();
@@ -206,8 +238,8 @@ export async function updateOrderCustomer(code: string, o: NewOrder) {
   await ready();
   if (!hasDatabase) { const x = mem().orders.find((v) => v.code === code); if (x) Object.assign(x, o, { updatedAt: new Date().toISOString() }); return; }
   await q(
-    `UPDATE orders SET kind=$2,name=$3,phone=$4,email=$5,company=$6,address=$7,items=$8,note=$9,images=$10,updated_at=now() WHERE code=$1`,
-    [code, o.kind, o.name, o.phone, o.email, o.company, o.address, JSON.stringify(o.items), o.note, JSON.stringify(o.images)],
+    `UPDATE orders SET kind=$2,name=$3,phone=$4,email=$5,company=$6,address=$7,items=$8,note=$9,images=$10,subtotal=$11,updated_at=now() WHERE code=$1`,
+    [code, o.kind, o.name, o.phone, o.email, o.company, o.address, JSON.stringify(o.items), o.note, JSON.stringify(o.images), o.items.reduce((t, i) => t + i.qty * i.price, 0)],
   );
 }
 export async function listOrders(): Promise<Order[]> {
@@ -215,10 +247,10 @@ export async function listOrders(): Promise<Order[]> {
   if (!hasDatabase) return mem().orders;
   return (await q(`SELECT * FROM orders ORDER BY created_at DESC LIMIT 500`)).map(toOrder);
 }
-export async function updateOrderAdmin(id: number, d: { status: OrderStatus; quote: string; adminNote: string }) {
+export async function updateOrderAdmin(id: number, d: { status: OrderStatus; quote: string; adminNote: string; paymentStatus: PaymentStatus; shippingFee: number }) {
   await ready();
   if (!hasDatabase) { const x = mem().orders.find((v) => v.id === id); if (x) Object.assign(x, d, { updatedAt: new Date().toISOString() }); return; }
-  await q(`UPDATE orders SET status=$2, quote=$3, admin_note=$4, updated_at=now() WHERE id=$1`, [id, d.status, d.quote, d.adminNote]);
+  await q(`UPDATE orders SET status=$2, quote=$3, admin_note=$4, payment_status=$5, shipping_fee=$6, updated_at=now() WHERE id=$1`, [id, d.status, d.quote, d.adminNote, d.paymentStatus, d.shippingFee]);
 }
 export async function deleteOrder(id: number) {
   await ready();
@@ -298,4 +330,103 @@ export async function deleteAdmin(id: number) {
   await ready();
   if (!hasDatabase) { const m = mem(); m.admins = m.admins.filter((a) => a.id !== id); return; }
   await q(`DELETE FROM admins WHERE id=$1`, [id]);
+}
+
+/* ───────── Khách hàng ───────── */
+const toCustomer = (r: Row): Customer => ({
+  id: Number(r.id), email: String(r.email), name: String(r.name), phone: String(r.phone), address: String(r.address),
+  company: String(r.company), pass: String(r.pass), status: r.status as Customer["status"],
+  createdAt: new Date(r.created_at as string).toISOString(),
+  lastLogin: r.last_login ? new Date(r.last_login as string).toISOString() : null,
+});
+export async function getCustomer(id: number) {
+  await ready();
+  if (!hasDatabase) return mem().customers.find((c) => c.id === id) ?? null;
+  const [r] = await q(`SELECT * FROM customers WHERE id=$1`, [id]);
+  return r ? toCustomer(r) : null;
+}
+export async function getCustomerByEmail(email: string) {
+  await ready();
+  if (!hasDatabase) return mem().customers.find((c) => c.email === email) ?? null;
+  const [r] = await q(`SELECT * FROM customers WHERE email=$1`, [email]);
+  return r ? toCustomer(r) : null;
+}
+export async function createCustomer(c: Pick<Customer, "email" | "name" | "phone" | "pass">) {
+  await ready();
+  if (!hasDatabase) {
+    const m = mem();
+    const u: Customer = { ...c, address: "", company: "", status: "ACTIVE", id: Math.max(0, ...m.customers.map((x) => x.id)) + 1, createdAt: new Date().toISOString(), lastLogin: null };
+    m.customers.push(u); return u;
+  }
+  const [r] = await q(`INSERT INTO customers (email,name,phone,pass) VALUES ($1,$2,$3,$4) RETURNING *`, [c.email, c.name, c.phone, c.pass]);
+  return toCustomer(r);
+}
+export async function updateCustomer(id: number, d: Partial<Pick<Customer, "name" | "phone" | "address" | "company" | "pass" | "status" | "lastLogin">>) {
+  await ready();
+  if (!hasDatabase) { const x = mem().customers.find((c) => c.id === id); if (x) Object.assign(x, d); return; }
+  const cols: Record<string, string> = { name: "name", phone: "phone", address: "address", company: "company", pass: "pass", status: "status", lastLogin: "last_login" };
+  const keys = Object.keys(d).filter((k) => k in cols) as (keyof typeof d)[];
+  if (!keys.length) return;
+  await q(`UPDATE customers SET ${keys.map((k, i) => `${cols[k]}=$${i + 2}`).join(",")} WHERE id=$1`, [id, ...keys.map((k) => d[k])]);
+}
+export type CustomerRow = Customer & { orders: number; spent: number };
+export async function listCustomers(): Promise<CustomerRow[]> {
+  await ready();
+  if (!hasDatabase) {
+    const m = mem();
+    return m.customers.map((c) => {
+      const os = m.orders.filter((o) => o.customerId === c.id);
+      return { ...c, orders: os.length, spent: os.filter((o) => o.paymentStatus === "PAID").reduce((t, o) => t + o.subtotal + o.shippingFee, 0) };
+    }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  const rows = await q(`SELECT c.*, count(o.id)::int AS n,
+      coalesce(sum(CASE WHEN o.payment_status='PAID' THEN o.subtotal + o.shipping_fee ELSE 0 END),0)::bigint AS spent
+    FROM customers c LEFT JOIN orders o ON o.customer_id=c.id GROUP BY c.id ORDER BY c.created_at DESC LIMIT 1000`);
+  return rows.map((r) => ({ ...toCustomer(r), orders: Number(r.n), spent: Number(r.spent) }));
+}
+
+/* ───────── Thư viện ảnh ───────── */
+const toMedia = (r: Row): Media => ({ id: Number(r.id), url: String(r.url), name: String(r.name), size: Number(r.size), createdAt: new Date(r.created_at as string).toISOString() });
+export async function listMedia(): Promise<Media[]> {
+  await ready();
+  if (!hasDatabase) return [...mem().media].reverse();
+  return (await q(`SELECT * FROM media ORDER BY created_at DESC LIMIT 500`)).map(toMedia);
+}
+export async function addMedia(m: Pick<Media, "url" | "name" | "size">) {
+  await ready();
+  if (!hasDatabase) { const x = mem(); const r = { ...m, id: x.media.length + 1, createdAt: new Date().toISOString() }; x.media.push(r); return r; }
+  const [r] = await q(`INSERT INTO media (url,name,size) VALUES ($1,$2,$3) RETURNING *`, [m.url, m.name, m.size]);
+  return toMedia(r);
+}
+export async function deleteMedia(id: number) {
+  await ready();
+  if (!hasDatabase) { const x = mem(); const r = x.media.find((v) => v.id === id); x.media = x.media.filter((v) => v.id !== id); return r ?? null; }
+  const [r] = await q(`DELETE FROM media WHERE id=$1 RETURNING *`, [id]);
+  return r ? toMedia(r) : null;
+}
+
+/* ───────── Cấu hình bán hàng ───────── */
+export async function getShop(): Promise<Shop> {
+  return { ...DEFAULT_SHOP, ...((await getKv<Partial<Shop>>("shop")) ?? {}) };
+}
+export async function saveShop(s: Shop) {
+  await setKv("shop", s);
+}
+
+/* ───────── Số liệu cho trang tổng quan ───────── */
+export async function stats() {
+  const [orders, customers, products] = await Promise.all([listOrders(), listCustomers(), listProducts({ all: true })]);
+  const since = Date.now() - 30 * 86400_000;
+  const live = orders.filter((o) => o.status !== "CANCELLED");
+  const paid = live.filter((o) => o.paymentStatus === "PAID");
+  return {
+    newOrders: orders.filter((o) => o.status === "NEW").length,
+    orders30: live.filter((o) => Date.parse(o.createdAt) >= since).length,
+    revenue30: paid.filter((o) => Date.parse(o.createdAt) >= since).reduce((t, o) => t + o.subtotal + o.shippingFee, 0),
+    revenueAll: paid.reduce((t, o) => t + o.subtotal + o.shippingFee, 0),
+    unpaid: live.filter((o) => o.kind === "Mua hàng" && o.paymentStatus === "UNPAID").length,
+    customers: customers.length,
+    products: products.filter((p) => p.active).length,
+    recent: orders.slice(0, 6),
+  };
 }
