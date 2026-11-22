@@ -27,3 +27,7 @@ Không có `DATABASE_URL` thì web chạy với dữ liệu tạm trong bộ nh�
 
 ## Nguồn ảnh
 Ảnh sản phẩm: dựng 3D theo bộ bản vẽ kỹ thuật Vina-Straw. Ảnh đồng ruộng: Wikimedia Commons, xem `/nguon-anh`.
+
+## Đã cấu hình trên Vercel
+- Project: `vina-straw-web` — Neon `neon-crimson-flower` (free), Blob `vina-straw-web-blob` (public)
+- Cần tự thêm biến `ADMIN_PASSWORD` (Settings → Environment Variables) rồi Redeploy để đổi mật khẩu quản trị.
