@@ -76,6 +76,14 @@ const MIGRATIONS: { id: string; run: () => Promise<void> }[] = [
     },
   },
 ];
+MIGRATIONS.push({
+  id: "2026-11-contact",
+  run: async () => {
+    for (const k of ["contactEmail", "contactPhone"] as const) {
+      await q(`INSERT INTO settings (key,value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value`, [k, JSON.stringify(DEFAULT_SETTINGS[k])]);
+    }
+  },
+});
 async function migrate() {
   const [row] = await q<{ value: string[] }>(`SELECT value FROM settings WHERE key='_migrations'`);
   const done = new Set(row?.value ?? []);

@@ -229,8 +229,8 @@ export const DEFAULT_SETTINGS: Settings = {
   aboutTitle: "Một dự án sinh viên, bắt đầu từ cánh đồng",
   aboutBody:
     "Vina-Straw là dự án nghiên cứu của nhóm sinh viên kỹ thuật tại TP. Hồ Chí Minh. Chúng tôi phát triển hệ sinh thái bao bì từ phụ phẩm lúa gạo: từ khâu làm sạch, mở xơ, phối liệu đến ép khuôn và tráng phủ sinh học. Mọi sản phẩm hiện ở giai đoạn mẫu thử và đang được kiểm nghiệm trước khi thương mại hoá.",
-  contactEmail: "lienhe@vinastraw.example",
-  contactPhone: "Liên hệ qua biểu mẫu",
+  contactEmail: "vinapackvietnam@gmail.com",
+  contactPhone: "0931920637",
   contactAddress: "Thủ Đức, TP. Hồ Chí Minh",
   team: "Nhóm Vina-Straw",
 };
