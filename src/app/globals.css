@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+/*
+  Vina-Straw — bảng màu lấy từ cánh đồng sau vụ gặt:
+  trắng giấy, xanh mạ / xanh lá đậm, vàng rơm, nâu đất.
+*/
+@theme {
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), var(--font-body), ui-sans-serif, sans-serif;
+
+  --color-paper: #ffffff;
+  --color-mist: #f2f6ee;
+  --color-ink: #16241b;
+  --color-ink-soft: #4a5a4f;
+
+  --color-leaf-950: #0d2a1b;
+  --color-leaf-900: #143d28;
+  --color-leaf-800: #1a4d33;
+  --color-leaf-700: #1e5a3c;
+  --color-leaf-600: #2b7350;
+  --color-leaf-500: #3f8f5c;
+  --color-leaf-200: #cfe3c6;
+  --color-leaf-100: #e4efdd;
+
+  --color-sprout: #7cb342;
+  --color-sprout-soft: #e9f3dc;
+
+  --color-straw-600: #b98d3a;
+  --color-straw-500: #d4ab5a;
+  --color-straw-300: #ead49d;
+  --color-straw-100: #f8efd8;
+
+  --color-soil-900: #3d2814;
+  --color-soil-700: #6b4626;
+  --color-soil-500: #8f6539;
+  --color-soil-100: #f1e6d9;
+
+  --ease-out-soft: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body { background: var(--color-paper); color: var(--color-ink); }
+::selection { background: var(--color-straw-300); color: var(--color-soil-900); }
+:focus-visible { outline: 3px solid var(--color-sprout); outline-offset: 2px; border-radius: 6px; }
+input, select, textarea { scroll-margin-top: 7rem; }
+
+.font-display { font-family: var(--font-display); font-optical-sizing: auto; }
+
+/* ───────── Họa tiết ───────── */
+/* Đan rơm: sọc chéo hai chiều như nong nia */
+.weave {
+  background-color: var(--color-straw-100);
+  background-image:
+    repeating-linear-gradient(45deg, rgba(185, 141, 58, 0.22) 0 6px, transparent 6px 14px),
+    repeating-linear-gradient(-45deg, rgba(107, 70, 38, 0.14) 0 6px, transparent 6px 14px);
+}
+.weave-dark {
+  background-color: var(--color-leaf-900);
+  background-image:
+    repeating-linear-gradient(45deg, rgba(212, 171, 90, 0.08) 0 6px, transparent 6px 14px),
+    repeating-linear-gradient(-45deg, rgba(124, 179, 66, 0.06) 0 6px, transparent 6px 14px);
+}
+/* Giấy có sợi rơm li ti */
+.fiber-paper {
+  background-color: #fff;
+  background-image: url("/img/fibers.svg");
+  background-size: 520px 520px;
+}
+
+/* ───────── Thành phần ───────── */
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-[15px] font-semibold transition duration-200 select-none;
+  transition-timing-function: var(--ease-spring);
+  &:hover { transform: translateY(-2px); }
+  &:active { transform: translateY(0) scale(0.97); }
+  &:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+}
+@utility btn-primary {
+  @apply btn bg-leaf-700 text-white shadow-[0_10px_24px_-12px_rgba(30,90,60,.7)] hover:bg-leaf-800;
+}
+@utility btn-straw {
+  @apply btn bg-straw-500 text-soil-900 hover:bg-straw-300;
+}
+@utility btn-ghost {
+  @apply btn border border-leaf-700/20 bg-white text-leaf-800 hover:border-leaf-700/50;
+}
+@utility btn-danger {
+  @apply btn border border-red-200 bg-white text-red-700 hover:bg-red-50;
+}
+@utility field {
+  @apply w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 text-[15px] text-ink outline-none transition placeholder:text-ink/35 focus:border-leaf-600 focus:ring-4 focus:ring-leaf-100;
+}
+@utility label {
+  @apply mb-1.5 block text-sm font-semibold text-ink;
+}
+@utility panel {
+  @apply rounded-3xl border border-ink/10 bg-white;
+}
+
+/* Gạch chân vẽ ra khi hover */
+.link-draw { background: linear-gradient(currentColor, currentColor) 0 100% / 0 1.5px no-repeat; transition: background-size .35s var(--ease-out-soft); }
+.link-draw:hover { background-size: 100% 1.5px; }
+
+/* Ảnh phóng nhẹ trong khung */
+.zoom-frame { overflow: hidden; }
+.zoom-frame img, .zoom-frame video { transition: transform .7s var(--ease-out-soft); }
+.zoom-frame:hover img { transform: scale(1.03); }
+
+/* Hero: chữ trồi lên theo từng dòng */
+[data-enter] { opacity: 0; transform: translateY(28px); }
+.entered [data-enter] { opacity: 1; transform: none; transition: opacity .9s var(--ease-out-soft), transform 1s var(--ease-out-soft); transition-delay: calc(var(--i, 0) * 110ms); }
+
+.reveal { opacity: 0; transform: translateY(32px); transition: opacity .8s var(--ease-out-soft), transform .9s var(--ease-out-soft); }
+.reveal.in { opacity: 1; transform: none; }
+
+/* Dải chữ chạy */
+.marquee { display: flex; width: max-content; animation: marquee 40s linear infinite; }
+.marquee:hover { animation-play-state: paused; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+/* Hạt lúa rơi nhẹ ở hero (CSS) */
+@keyframes sway { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+.sway { transform-origin: bottom center; animation: sway 6s ease-in-out infinite; }
+
+.toast-pop { animation: pop .45s var(--ease-spring); }
+@keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.97); } }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  [data-enter], .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .marquee, .sway { animation: none; }
+}
