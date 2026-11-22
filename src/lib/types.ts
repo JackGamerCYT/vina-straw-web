@@ -67,3 +67,18 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
 
 /** Khách còn sửa được đơn khi đơn chưa được xác nhận. */
 export const EDITABLE: OrderStatus[] = ["NEW", "QUOTING", "QUOTED"];
+
+export type AdminRole = "OWNER" | "EDITOR";
+export type AdminStatus = "PENDING" | "ACTIVE" | "LOCKED";
+export type AdminUser = {
+  id: number;
+  email: string;
+  name: string;
+  pass: string;
+  role: AdminRole;
+  status: AdminStatus;
+  createdAt: string;
+  lastLogin: string | null;
+};
+export const ROLE_LABEL: Record<AdminRole, string> = { OWNER: "Chủ trang", EDITOR: "Biên tập" };
+export const ADMIN_STATUS_LABEL: Record<AdminStatus, string> = { PENDING: "Chờ duyệt", ACTIVE: "Đang hoạt động", LOCKED: "Đã khoá" };

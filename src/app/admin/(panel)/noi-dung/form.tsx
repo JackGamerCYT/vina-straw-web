@@ -1,7 +1,7 @@
 "use client";
+import { KeepForm, usePending } from "@/components/keep-form";
 import Image from "next/image";
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
 import { Save } from "lucide-react";
 import { toast } from "sonner";
 import { saveSettingsAction, type FormState } from "@/lib/actions";
@@ -9,7 +9,7 @@ import { compressImage } from "@/components/image-picker";
 import type { Settings } from "@/lib/types";
 
 function Btn() {
-  const { pending } = useFormStatus();
+  const pending = usePending();
   return <button disabled={pending} className="btn-primary !px-8"><Save className="h-4 w-4" />{pending ? "Đang lưu…" : "Lưu nội dung"}</button>;
 }
 
@@ -29,7 +29,7 @@ export function SettingsForm({ s }: { s: Settings }) {
     </div>
   );
   return (
-    <form action={action} className="mt-8 grid gap-6 lg:grid-cols-2">
+    <KeepForm action={action} className="mt-8 grid gap-6 lg:grid-cols-2">
       <section className="panel space-y-5 p-6">
         <h2 className="font-display text-xl font-bold">Phần đầu trang chủ</h2>
         <F k="heroTitle" label="Tiêu đề lớn" />
@@ -51,6 +51,6 @@ export function SettingsForm({ s }: { s: Settings }) {
         <F k="contactPhone" label="Điện thoại" />
       </section>
       <div className="lg:col-span-2"><Btn /></div>
-    </form>
+    </KeepForm>
   );
 }

@@ -1,7 +1,7 @@
 import "server-only";
 import { neon } from "@neondatabase/serverless";
-import { DEFAULT_SETTINGS, SEED_PRODUCTS } from "./seed";
-import type { Order, OrderItem, OrderStatus, Product, Settings, Spec } from "./types";
+import { DEFAULT_SETTINGS, REAL_SLUGS, SEED_PRODUCTS } from "./seed";
+import type { AdminRole, AdminStatus, AdminUser, Order, OrderItem, OrderStatus, Product, Settings, Spec } from "./types";
 
 const URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
 export const hasDatabase = Boolean(URL);
@@ -13,7 +13,7 @@ async function q<T = Row>(text: string, params: unknown[] = []): Promise<T[]> {
 }
 
 /* ───────── Bộ nhớ tạm khi chưa nối Postgres (chỉ để xem thử) ───────── */
-type Mem = { products: Product[]; orders: Order[]; settings: Settings; seq: number };
+type Mem = { products: Product[]; orders: Order[]; settings: Settings; seq: number; admins: AdminUser[]; kv: Record<string, unknown> };
 const g = globalThis as unknown as { __vsMem?: Mem; __vsReady?: Promise<void> };
 function mem(): Mem {
   if (!g.__vsMem) {
@@ -22,6 +22,8 @@ function mem(): Mem {
       orders: [],
       settings: { ...DEFAULT_SETTINGS },
       seq: 100,
+      admins: [],
+      kv: {},
     };
   }
   return g.__vsMem;
@@ -42,6 +44,10 @@ async function init() {
     images JSONB NOT NULL DEFAULT '[]', status TEXT NOT NULL DEFAULT 'NEW', quote TEXT NOT NULL DEFAULT '',
     admin_note TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
   await q(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value JSONB NOT NULL)`);
+  await q(`CREATE TABLE IF NOT EXISTS admins (
+    id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, name TEXT NOT NULL, pass TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'EDITOR', status TEXT NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(), last_login TIMESTAMPTZ)`);
   const [{ n }] = await q<{ n: number }>(`SELECT count(*)::int AS n FROM products`);
   if (n === 0) {
     for (const p of SEED_PRODUCTS) {
@@ -51,6 +57,33 @@ async function init() {
         [p.slug, p.name, p.line, p.short, p.description, p.price, p.unit, p.moq, JSON.stringify(p.specs), JSON.stringify(p.images), p.featured, p.active, p.sort],
       );
     }
+  }
+  await migrate();
+}
+
+/* Thay đổi dữ liệu một lần cho database đã chạy (seed chỉ nạp khi bảng trống). */
+const MIGRATIONS: { id: string; run: () => Promise<void> }[] = [
+  {
+    id: "2026-11-real-products",
+    run: async () => {
+      for (const p of SEED_PRODUCTS.filter((x) => REAL_SLUGS.includes(x.slug))) {
+        await q(
+          `INSERT INTO products (slug,name,line,short,description,price,unit,moq,specs,images,featured,active,sort)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT (slug) DO NOTHING`,
+          [p.slug, p.name, p.line, p.short, p.description, p.price, p.unit, p.moq, JSON.stringify(p.specs), JSON.stringify(p.images), p.featured, p.active, p.sort],
+        );
+      }
+    },
+  },
+];
+async function migrate() {
+  const [row] = await q<{ value: string[] }>(`SELECT value FROM settings WHERE key='_migrations'`);
+  const done = new Set(row?.value ?? []);
+  for (const m of MIGRATIONS) {
+    if (done.has(m.id)) continue;
+    await m.run();
+    done.add(m.id);
+    await q(`INSERT INTO settings (key,value) VALUES ('_migrations',$1) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value`, [JSON.stringify([...done])]);
   }
 }
 async function ready() {
@@ -183,4 +216,78 @@ export async function deleteOrder(id: number) {
   await ready();
   if (!hasDatabase) { const m = mem(); m.orders = m.orders.filter((o) => o.id !== id); return; }
   await q(`DELETE FROM orders WHERE id=$1`, [id]);
+}
+
+/* ───────── Giá trị nội bộ (khoá bí mật, chữ/ảnh sửa trực tiếp) ───────── */
+export async function getKv<T>(key: string): Promise<T | undefined> {
+  await ready();
+  if (!hasDatabase) return mem().kv[key] as T | undefined;
+  const [r] = await q<{ value: T }>(`SELECT value FROM settings WHERE key=$1`, [key]);
+  return r?.value;
+}
+export async function setKv(key: string, value: unknown) {
+  await ready();
+  if (!hasDatabase) { mem().kv[key] = value; return; }
+  await q(`INSERT INTO settings (key,value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value`, [key, JSON.stringify(value)]);
+}
+/** Chỉ ghi khi khoá chưa có; trả về giá trị đang được dùng. */
+export async function initKv<T>(key: string, value: T): Promise<T> {
+  await ready();
+  if (!hasDatabase) { const m = mem(); if (!(key in m.kv)) m.kv[key] = value; return m.kv[key] as T; }
+  await q(`INSERT INTO settings (key,value) VALUES ($1,$2) ON CONFLICT (key) DO NOTHING`, [key, JSON.stringify(value)]);
+  return (await getKv<T>(key)) as T;
+}
+
+/* ───────── Tài khoản quản trị ───────── */
+const toAdmin = (r: Row): AdminUser => ({
+  id: Number(r.id), email: String(r.email), name: String(r.name), pass: String(r.pass),
+  role: r.role as AdminRole, status: r.status as AdminStatus,
+  createdAt: new Date(r.created_at as string).toISOString(),
+  lastLogin: r.last_login ? new Date(r.last_login as string).toISOString() : null,
+});
+export async function listAdmins(): Promise<AdminUser[]> {
+  await ready();
+  if (!hasDatabase) return [...mem().admins];
+  return (await q(`SELECT * FROM admins ORDER BY created_at`)).map(toAdmin);
+}
+export async function countAdmins() {
+  await ready();
+  if (!hasDatabase) return mem().admins.length;
+  const [{ n }] = await q<{ n: number }>(`SELECT count(*)::int AS n FROM admins`);
+  return n;
+}
+export async function getAdmin(id: number) {
+  await ready();
+  if (!hasDatabase) return mem().admins.find((a) => a.id === id) ?? null;
+  const [r] = await q(`SELECT * FROM admins WHERE id=$1`, [id]);
+  return r ? toAdmin(r) : null;
+}
+export async function getAdminByEmail(email: string) {
+  await ready();
+  if (!hasDatabase) return mem().admins.find((a) => a.email === email) ?? null;
+  const [r] = await q(`SELECT * FROM admins WHERE email=$1`, [email]);
+  return r ? toAdmin(r) : null;
+}
+export async function createAdmin(a: { email: string; name: string; pass: string; role: AdminRole; status: AdminStatus }) {
+  await ready();
+  if (!hasDatabase) {
+    const m = mem();
+    const u: AdminUser = { ...a, id: Math.max(0, ...m.admins.map((x) => x.id)) + 1, createdAt: new Date().toISOString(), lastLogin: null };
+    m.admins.push(u); return u;
+  }
+  const [r] = await q(`INSERT INTO admins (email,name,pass,role,status) VALUES ($1,$2,$3,$4,$5) RETURNING *`, [a.email, a.name, a.pass, a.role, a.status]);
+  return toAdmin(r);
+}
+export async function updateAdmin(id: number, d: Partial<Pick<AdminUser, "name" | "pass" | "role" | "status" | "lastLogin">>) {
+  await ready();
+  if (!hasDatabase) { const x = mem().admins.find((a) => a.id === id); if (x) Object.assign(x, d); return; }
+  const cols: Record<string, string> = { name: "name", pass: "pass", role: "role", status: "status", lastLogin: "last_login" };
+  const keys = Object.keys(d).filter((k) => k in cols) as (keyof typeof d)[];
+  if (!keys.length) return;
+  await q(`UPDATE admins SET ${keys.map((k, i) => `${cols[k]}=$${i + 2}`).join(",")} WHERE id=$1`, [id, ...keys.map((k) => d[k])]);
+}
+export async function deleteAdmin(id: number) {
+  await ready();
+  if (!hasDatabase) { const m = mem(); m.admins = m.admins.filter((a) => a.id !== id); return; }
+  await q(`DELETE FROM admins WHERE id=$1`, [id]);
 }

@@ -19,60 +19,59 @@ export async function compressImage(file: File, max = 1600, quality = 0.82): Pro
 }
 
 /**
- * Chọn / xoá / sắp xếp ảnh.
- * - Ảnh đã có: gửi kèm input hidden `keep` (+ `order` để giữ thứ tự).
+ * Chọn / xoá / sắp xếp ảnh (cả ảnh cũ lẫn ảnh vừa chọn).
+ * - Ảnh đã có: input hidden `keep`.
  * - Ảnh mới: nén rồi gắn vào input file `name` qua DataTransfer.
+ * - `order`: thứ tự hiển thị, ảnh cũ ghi URL, ảnh mới ghi `new:<vị trí trong input file>`.
  */
+type Item = { key: string; url: string; file?: File };
 export function ImagePicker({ name = "images", existing = [], max = 6, label = "Thêm ảnh" }: { name?: string; existing?: string[]; max?: number; label?: string }) {
-  const [kept, setKept] = useState<string[]>(existing);
-  const [added, setAdded] = useState<{ file: File; url: string }[]>([]);
+  const [items, setItems] = useState<Item[]>(existing.map((u) => ({ key: u, url: u })));
   const [busy, setBusy] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const realInput = useRef<HTMLInputElement>(null);
+  const added = items.filter((x) => x.file);
 
   useEffect(() => {
     const dt = new DataTransfer();
-    added.forEach((a) => dt.items.add(a.file));
+    added.forEach((a) => dt.items.add(a.file!));
     if (realInput.current) realInput.current.files = dt.files;
-  }, [added]);
-  useEffect(() => () => added.forEach((a) => URL.revokeObjectURL(a.url)), []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => items.forEach((a) => a.file && URL.revokeObjectURL(a.url)), []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const room = max - kept.length - added.length;
+  const room = max - items.length;
   async function onPick(list: FileList | null) {
     if (!list) return;
     setBusy(true);
     const picked = Array.from(list).filter((f) => f.type.startsWith("image/")).slice(0, Math.max(0, room));
-    const out: { file: File; url: string }[] = [];
-    for (const f of picked) { const c = await compressImage(f); out.push({ file: c, url: URL.createObjectURL(c) }); }
-    setAdded((a) => [...a, ...out]);
+    const out: Item[] = [];
+    for (const f of picked) { const c = await compressImage(f); const url = URL.createObjectURL(c); out.push({ key: url, url, file: c }); }
+    setItems((a) => [...a, ...out]);
     setBusy(false);
     if (fileInput.current) fileInput.current.value = "";
   }
-  const move = (i: number, d: number) => setKept((k) => { const n = [...k]; const j = i + d; if (j < 0 || j >= n.length) return n; [n[i], n[j]] = [n[j], n[i]]; return n; });
+  const move = (i: number, d: number) => setItems((k) => { const n = [...k]; const j = i + d; if (j < 0 || j >= n.length) return n; [n[i], n[j]] = [n[j], n[i]]; return n; });
+  const order = items.map((x) => (x.file ? `new:${added.indexOf(x)}` : x.url)).join("|");
 
   return (
     <div>
-      {kept.map((u) => <input key={u} type="hidden" name="keep" value={u} />)}
-      <input type="hidden" name="order" value={kept.join("|")} />
+      {items.filter((x) => !x.file).map((x) => <input key={x.key} type="hidden" name="keep" value={x.url} />)}
+      <input type="hidden" name="order" value={order} />
       <input ref={realInput} type="file" name={name} multiple className="hidden" tabIndex={-1} aria-hidden />
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-        {kept.map((u, i) => (
-          <figure key={u} className="group relative aspect-square overflow-hidden rounded-2xl border border-ink/10 bg-mist">
-            <Image src={u} alt="" fill sizes="160px" className="object-contain p-1" unoptimized={u.startsWith("data:")} />
+        {items.map((x, i) => (
+          <figure key={x.key} className={`group relative aspect-square overflow-hidden rounded-2xl bg-mist ${x.file ? "border-2 border-dashed border-sprout" : "border border-ink/10"}`}>
+            {x.file
+              ? <img src={x.url} alt="" className="h-full w-full object-contain p-1" /> // eslint-disable-line @next/next/no-img-element
+              : <Image src={x.url} alt="" fill sizes="160px" className="object-contain p-1" unoptimized={x.url.startsWith("data:")} />}
             {i === 0 && <span className="absolute left-2 top-2 rounded-full bg-leaf-700 px-2 py-0.5 text-[11px] font-semibold text-white">Ảnh chính</span>}
+            {x.file && i !== 0 && <span className="absolute left-2 top-2 rounded-full bg-sprout px-2 py-0.5 text-[11px] font-semibold text-white">Mới</span>}
             <div className="absolute inset-x-1 bottom-1 flex justify-between opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
               <button type="button" onClick={() => move(i, -1)} className="grid h-7 w-7 place-items-center rounded-full bg-white/95 shadow" aria-label="Đưa lên trước"><ArrowLeft className="h-3.5 w-3.5" /></button>
+              {i !== 0 && <button type="button" onClick={() => setItems((k) => [k[i], ...k.filter((_, j) => j !== i)])} className="rounded-full bg-white/95 px-2 text-[11px] font-semibold shadow">Làm ảnh chính</button>}
               <button type="button" onClick={() => move(i, 1)} className="grid h-7 w-7 place-items-center rounded-full bg-white/95 shadow" aria-label="Đưa ra sau"><ArrowRight className="h-3.5 w-3.5" /></button>
             </div>
-            <button type="button" onClick={() => setKept((k) => k.filter((x) => x !== u))} className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-white/95 text-red-600 shadow" aria-label="Xoá ảnh"><X className="h-4 w-4" /></button>
-          </figure>
-        ))}
-        {added.map((a, i) => (
-          <figure key={a.url} className="relative aspect-square overflow-hidden rounded-2xl border-2 border-dashed border-sprout bg-sprout-soft">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={a.url} alt="" className="h-full w-full object-contain p-1" />
-            <span className="absolute left-2 top-2 rounded-full bg-sprout px-2 py-0.5 text-[11px] font-semibold text-white">Mới</span>
-            <button type="button" onClick={() => setAdded((x) => x.filter((_, k) => k !== i))} className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-white/95 text-red-600 shadow" aria-label="Bỏ ảnh"><X className="h-4 w-4" /></button>
+            <button type="button" onClick={() => setItems((k) => k.filter((y) => y.key !== x.key))} className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-white/95 text-red-600 shadow" aria-label="Xoá ảnh"><X className="h-4 w-4" /></button>
           </figure>
         ))}
         {room > 0 && (

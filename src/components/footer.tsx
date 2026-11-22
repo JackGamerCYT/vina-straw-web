@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./logo";
+import { T } from "./editable";
 import type { Settings } from "@/lib/types";
 
 export function Footer({ s }: { s: Settings }) {
@@ -8,7 +9,7 @@ export function Footer({ s }: { s: Settings }) {
       <div className="mx-auto grid max-w-[1240px] gap-12 px-5 py-16 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:px-8">
         <div>
           <Logo light />
-          <p className="mt-5 max-w-sm leading-relaxed text-white/70">Bao bì từ rơm rạ Việt Nam. Dự án nghiên cứu và phát triển của sinh viên, đang ở giai đoạn mẫu thử.</p>
+          <T k="footer.about" as="p" multiline className="mt-5 block max-w-sm leading-relaxed text-white/70">Bao bì từ rơm rạ Việt Nam. Dự án nghiên cứu và phát triển của sinh viên, đang ở giai đoạn mẫu thử.</T>
         </div>
         <div>
           <p className="font-display text-lg font-semibold text-white">Sản phẩm</p>
@@ -29,17 +30,17 @@ export function Footer({ s }: { s: Settings }) {
         <div>
           <p className="font-display text-lg font-semibold text-white">Liên hệ</p>
           <ul className="mt-4 space-y-2.5">
-            <li>{s.team}</li>
-            <li>{s.contactAddress}</li>
-            <li>{s.contactEmail}</li>
-            <li>{s.contactPhone}</li>
+            <li><T k="team">{s.team}</T></li>
+            <li><T k="contactAddress">{s.contactAddress}</T></li>
+            <li><T k="contactEmail">{s.contactEmail}</T></li>
+            <li><T k="contactPhone">{s.contactPhone}</T></li>
           </ul>
         </div>
       </div>
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-[1240px] flex-col gap-2 px-5 py-6 text-xs text-white/50 lg:flex-row lg:justify-between lg:px-8">
-          <p>© {new Date().getFullYear()} Vina-Straw. Hình sản phẩm là ảnh dựng 3D từ bản vẽ kỹ thuật.</p>
-          <p>Ảnh đồng ruộng: Wikimedia Commons (CC BY / CC BY-SA / PD) · <Link href="/nguon-anh" className="underline hover:text-white">Nguồn ảnh</Link> · <Link href="/admin" className="underline hover:text-white">Quản trị</Link></p>
+          <p>© {new Date().getFullYear()} Vina-Straw. Túi giấy và tấm lót rơm là ảnh chụp thật; các sản phẩm khác là ảnh dựng 3D.</p>
+          <p>Một số ảnh đồng ruộng: Wikimedia Commons · <Link href="/nguon-anh" className="underline hover:text-white">Nguồn ảnh</Link> · <Link href="/admin" className="underline hover:text-white">Quản trị</Link></p>
         </div>
       </div>
     </footer>

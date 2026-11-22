@@ -1,17 +1,17 @@
 "use client";
+import { KeepForm, usePending } from "@/components/keep-form";
 import Image from "next/image";
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
-import { useFormStatus } from "react-dom";
 import { CheckCircle2, Copy, Minus, Plus, Send } from "lucide-react";
 import { toast } from "sonner";
 import { ImagePicker } from "./image-picker";
 import { submitOrder, updateMyOrder, type FormState } from "@/lib/actions";
 import { ORDER_KINDS, type Order, type Product } from "@/lib/types";
-import { vnd } from "@/lib/format";
+import { vnd, priceText, isRender } from "@/lib/format";
 
 function Submit({ children }: { children: React.ReactNode }) {
-  const { pending } = useFormStatus();
+  const pending = usePending();
   return (
     <button disabled={pending} className="btn-primary w-full !py-4 text-base sm:w-auto sm:!px-10">
       <Send className="h-4 w-4" /> {pending ? "Đang gửi…" : children}
@@ -56,7 +56,7 @@ export function OrderForm({ products, order, preselect, kind }: { products: Prod
   }
 
   return (
-    <form action={action} className="space-y-12">
+    <KeepForm action={action} className="space-y-12">
       {edit && <><input type="hidden" name="code" value={order!.code} /><input type="hidden" name="token" value={order!.token} /></>}
 
       <fieldset>
@@ -80,11 +80,11 @@ export function OrderForm({ products, order, preselect, kind }: { products: Prod
             return (
               <li key={p.id} className={`flex flex-wrap items-center gap-4 p-4 transition sm:flex-nowrap ${v > 0 ? "bg-sprout-soft/60" : ""}`}>
                 <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-mist">
-                  {p.images[0] && <Image src={p.images[0]} alt="" fill sizes="64px" className="object-contain p-1.5" unoptimized={p.images[0].startsWith("data:")} />}
+                  {p.images[0] && <Image src={p.images[0]} alt="" fill sizes="64px" className={isRender(p.images[0]) ? "object-contain p-1.5" : "object-cover"} unoptimized={p.images[0].startsWith("data:")} />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-ink">{p.name}</p>
-                  <p className="text-sm text-ink-soft">{vnd(p.price)} / {p.unit} · tối thiểu {p.moq.toLocaleString("vi-VN")}</p>
+                  <p className="text-sm text-ink-soft">{priceText(p.price)}{p.price > 0 ? ` / ${p.unit}` : ""} · tối thiểu {p.moq.toLocaleString("vi-VN")}</p>
                 </div>
                 <div className="flex items-center gap-1">
                   <button type="button" onClick={() => setQ(p.id, v - (v > p.moq ? p.moq : v))} className="grid h-10 w-10 place-items-center rounded-full border border-ink/15 hover:bg-mist" aria-label={`Giảm ${p.name}`}><Minus className="h-4 w-4" /></button>
@@ -96,6 +96,7 @@ export function OrderForm({ products, order, preselect, kind }: { products: Prod
           })}
         </ul>
         <p className="mt-4 text-right text-ink-soft">Tạm tính theo giá tham khảo: <span className="font-display text-2xl font-bold text-leaf-700">{vnd(total)}</span></p>
+        {products.some((p) => p.price === 0 && (qty[p.id] || 0) > 0) && <p className="mt-1 text-right text-sm text-ink-soft">Chưa gồm sản phẩm ghi “Liên hệ”, sẽ báo giá riêng.</p>}
       </fieldset>
 
       <fieldset>
@@ -120,6 +121,6 @@ export function OrderForm({ products, order, preselect, kind }: { products: Prod
         <p className="max-w-md text-sm text-ink-soft">Chúng tôi chỉ dùng thông tin này để báo giá và giao hàng cho bạn.</p>
         <Submit>{edit ? "Lưu thay đổi" : "Gửi yêu cầu"}</Submit>
       </div>
-    </form>
+    </KeepForm>
   );
 }

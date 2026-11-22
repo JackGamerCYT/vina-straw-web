@@ -2,7 +2,53 @@ import type { Product, Settings } from "./types";
 
 type SeedProduct = Omit<Product, "id">;
 
+/** Sản phẩm có ảnh chụp thật; được thêm vào database đang chạy qua migration trong db.ts. */
+export const REAL_SLUGS = ["tui-giay-rom", "tam-lot-rom"];
+
 export const SEED_PRODUCTS: SeedProduct[] = [
+  {
+    slug: "tui-giay-rom",
+    name: "Túi giấy rơm",
+    line: "RơmFlex-Pack",
+    short: "Túi làm từ xơ rơm rạ, màu trắng ngà còn thấy sợi rơm, quai dây thừng và tem logo tròn.",
+    description:
+      "Mẫu túi thật đầu tiên của nhóm Vina-Straw, làm từ bột xơ rơm rạ. Bề mặt giữ lại sợi rơm tự nhiên nên mỗi chiếc có vân hơi khác nhau.\n\nHiện có hai kiểu: túi đứng có quai dây thừng và túi dẹt đục lỗ luồn dây. Kích thước, định lượng và giá đang được hoàn thiện. Gửi yêu cầu báo giá để nhận thông tin mới nhất và đặt mẫu thử.",
+    price: 0,
+    unit: "cái",
+    moq: 1,
+    specs: [
+      { k: "Nguyên liệu", v: "Xơ rơm rạ" },
+      { k: "Màu", v: "Trắng ngà, thấy sợi rơm" },
+      { k: "Quai", v: "Dây thừng" },
+      { k: "Kiểu", v: "Túi đứng có quai, túi dẹt đục lỗ" },
+      { k: "Giai đoạn", v: "Mẫu thử" },
+    ],
+    images: ["/img/real/tui-giay-1.webp", "/img/real/tui-giay-2.webp", "/img/real/tui-giay-3.webp", "/img/real/tui-giay-4.webp"],
+    featured: true,
+    active: true,
+    sort: -2,
+  },
+  {
+    slug: "tam-lot-rom",
+    name: "Tấm lót rơm",
+    line: "RơmCell-Cushion",
+    short: "Tấm ép từ sợi rơm vàng nguyên màu, mép tự nhiên, gắn tem logo Vina-Straw.",
+    description:
+      "Tấm lót ép từ sợi rơm rạ, giữ màu vàng rơm tự nhiên. Có thể dùng để lót, chèn hàng trong hộp hoặc trang trí khi trưng bày sản phẩm.\n\nĐây là mẫu thử của nhóm. Kích thước, độ dày và giá đang được hoàn thiện. Gửi yêu cầu báo giá để nhận thông tin mới nhất.",
+    price: 0,
+    unit: "tấm",
+    moq: 1,
+    specs: [
+      { k: "Nguyên liệu", v: "Sợi rơm rạ ép" },
+      { k: "Màu", v: "Vàng rơm tự nhiên" },
+      { k: "Hình dạng", v: "Tấm chữ nhật, mép tự nhiên" },
+      { k: "Giai đoạn", v: "Mẫu thử" },
+    ],
+    images: ["/img/real/tam-lot-1.webp", "/img/real/tam-lot-2.webp", "/img/real/tam-lot-3.webp", "/img/real/tam-lot-4.webp"],
+    featured: true,
+    active: true,
+    sort: -1,
+  },
   {
     slug: "to-rom-500ml",
     name: "Tô rơm 500 mL",

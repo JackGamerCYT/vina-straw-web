@@ -1,5 +1,5 @@
 "use client";
-import Image from "next/image";
+import { T, EImg } from "./editable";
 import { useEffect, useRef } from "react";
 
 export type Step = { title: string; body: string; img: string; contain?: boolean };
@@ -42,23 +42,23 @@ export function ProcessScroller({ steps }: { steps: Step[] }) {
   return (
     <div ref={wrap} className="relative overflow-hidden lg:h-screen">
       <div className="mx-auto max-w-[1240px] px-5 pt-24 lg:px-8 lg:pt-[13vh]">
-        <h2 className="font-display max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight text-leaf-900 sm:text-5xl lg:text-6xl">Từ bó rơm đến chiếc tô trên bàn</h2>
-        <p className="mt-4 max-w-xl text-lg text-ink-soft">Năm công đoạn, mỗi công đoạn có thông số ghi lại để mẫu sau giống mẫu trước.</p>
+        <T k="process.title" as="h2" className="font-display block max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight text-leaf-900 sm:text-5xl lg:text-6xl">Từ bó rơm đến chiếc tô trên bàn</T>
+        <T k="process.lead" as="p" className="mt-4 block max-w-xl text-lg text-ink-soft">Năm công đoạn, mỗi công đoạn có thông số ghi lại để mẫu sau giống mẫu trước.</T>
         <div className="mt-6 hidden h-[3px] w-64 overflow-hidden rounded-full bg-leaf-100 lg:block"><div ref={bar} className="h-full origin-left scale-x-0 bg-straw-500" /></div>
       </div>
       <div ref={track} className="mt-10 flex flex-col gap-8 px-5 pb-24 will-change-transform lg:mt-[5vh] lg:flex-row lg:gap-8 lg:pb-0 lg:pl-[max(2rem,calc((100vw-1240px)/2+2rem))]">
         {steps.map((s, i) => (
-          <article key={s.title} className="flex shrink-0 flex-col overflow-hidden rounded-[28px] bg-mist lg:h-[56vh] lg:w-[min(560px,42vw)] lg:flex-row">
+          <article key={i} className="flex shrink-0 flex-col overflow-hidden rounded-[28px] bg-mist lg:h-[56vh] lg:w-[min(560px,42vw)] lg:flex-row">
             <div className={`relative aspect-[4/3] overflow-hidden lg:aspect-auto lg:w-[52%] ${s.contain ? "bg-straw-100" : ""}`}>
               <div data-par className="absolute inset-[-10%_-12%]">
-                <Image src={s.img} alt="" fill sizes="(min-width:1024px) 300px, 100vw" className={s.contain ? "object-contain p-[14%]" : "object-cover"} />
+                <EImg k={`process.${i + 1}.img`} src={s.img} alt="" fill sizes="(min-width:1024px) 300px, 100vw" className={s.contain ? "object-contain p-[14%]" : "object-cover"} />
               </div>
             </div>
             <div className="flex flex-1 flex-col justify-between p-7">
               <span className="font-display text-6xl font-bold text-straw-500/80">{i + 1}</span>
               <div>
-                <h3 className="font-display text-2xl font-bold text-leaf-900">{s.title}</h3>
-                <p className="mt-3 leading-relaxed text-ink-soft">{s.body}</p>
+                <T k={`process.${i + 1}.t`} as="h3" className="font-display block text-2xl font-bold text-leaf-900">{s.title}</T>
+                <T k={`process.${i + 1}.b`} as="p" multiline className="mt-3 block leading-relaxed text-ink-soft">{s.body}</T>
               </div>
             </div>
           </article>

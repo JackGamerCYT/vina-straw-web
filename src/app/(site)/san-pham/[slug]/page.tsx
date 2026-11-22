@@ -6,7 +6,7 @@ import { ProductCard } from "@/components/product-card";
 import { Viewer3D, SHAPES } from "@/components/viewer3d";
 import { getProductBySlug, listProducts } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
-import { vnd } from "@/lib/format";
+import { priceText } from "@/lib/format";
 import { Gallery } from "./gallery";
 
 export const revalidate = 60;
@@ -38,8 +38,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <h1 className="font-display mt-2 text-4xl font-bold leading-tight tracking-tight text-leaf-900 sm:text-5xl">{p.name}</h1>
             <p className="mt-4 text-lg text-ink-soft">{p.short}</p>
             <div className="mt-8 flex items-end gap-3 border-y border-ink/10 py-6">
-              <span className="font-display text-4xl font-bold text-leaf-700">{vnd(p.price)}</span>
-              <span className="pb-1 text-ink-soft">/ {p.unit} · tối thiểu {p.moq.toLocaleString("vi-VN")} {p.unit}</span>
+              <span className="font-display text-4xl font-bold text-leaf-700">{priceText(p.price)}</span>
+              <span className="pb-1 text-ink-soft">{p.price > 0 ? `/ ${p.unit} · ` : "giá theo số lượng · "}tối thiểu {p.moq.toLocaleString("vi-VN")} {p.unit}</span>
             </div>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link href={`/bao-gia?sp=${p.id}`} className="btn-primary group !px-7 !py-4 text-base">Nhận báo giá sản phẩm này <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></Link>

@@ -1,6 +1,6 @@
 "use client";
+import { KeepForm, usePending } from "@/components/keep-form";
 import { useActionState, useState } from "react";
-import { useFormStatus } from "react-dom";
 import { Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { ImagePicker } from "@/components/image-picker";
@@ -8,12 +8,15 @@ import { deleteProductAction, saveProductAction, type FormState } from "@/lib/ac
 import type { Product } from "@/lib/types";
 
 function SaveBtn() {
-  const { pending } = useFormStatus();
+  const pending = usePending();
   return <button disabled={pending} className="btn-primary !px-8"><Save className="h-4 w-4" />{pending ? "Đang lưu…" : "Lưu sản phẩm"}</button>;
 }
 
 export function ProductEditor({ p }: { p: Product | null }) {
   const [state, action] = useActionState<FormState, FormData>(async (s, f) => {
+    // Vercel nhận tối đa ~4,5 MB mỗi lần gửi
+    const bytes = f.getAll("images").reduce((t, v) => t + (v instanceof File ? v.size : 0), 0);
+    if (bytes > 4 * 1024 * 1024) { toast.error("Ảnh mới quá nặng cho một lần lưu. Lưu bớt vài ảnh trước, rồi thêm tiếp."); return s; }
     const r = await saveProductAction(s, f);
     if (r?.ok) toast.success("Đã lưu. Trang web cập nhật ngay.");
     if (r?.error) toast.error(r.error);
@@ -24,7 +27,7 @@ export function ProductEditor({ p }: { p: Product | null }) {
 
   return (
     <>
-      <form action={action} key={p?.images.join("|")} className="mt-8 grid gap-8 lg:grid-cols-[1fr_420px]">
+      <KeepForm action={action} key={p?.images.join("|")} className="mt-8 grid gap-8 lg:grid-cols-[1fr_420px]">
         {p && <input type="hidden" name="id" value={p.id} />}
         <div className="space-y-6">
           <section className="panel space-y-5 p-6">
@@ -69,7 +72,7 @@ export function ProductEditor({ p }: { p: Product | null }) {
             <SaveBtn />
           </section>
         </aside>
-      </form>
+      </KeepForm>
       {p && (
         <form action={deleteProductAction} className="mt-10" onSubmit={(e) => { if (!confirm(`Xoá sản phẩm “${p.name}”?`)) e.preventDefault(); }}>
           <input type="hidden" name="id" value={p.id} />

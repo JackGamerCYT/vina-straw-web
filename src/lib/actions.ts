@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import * as db from "./db";
-import { checkPassword, clearAdminCookie, isAdmin, requireAdmin, setAdminCookie } from "./auth";
+import { endSession, isAdmin, requireAdmin } from "./auth";
 import { storeImages } from "./upload";
 import { slugify } from "./format";
 import { EDITABLE, ORDER_KINDS, type OrderItem, type OrderStatus, type Settings, type Spec } from "./types";
@@ -81,13 +81,8 @@ export async function lookupOrder(_: FormState, f: FormData): Promise<FormState>
 }
 
 /* ───────── Quản trị ───────── */
-export async function login(_: FormState, f: FormData): Promise<FormState> {
-  if (!checkPassword(str(f, "password", 200))) return { error: "Sai mật khẩu." };
-  await setAdminCookie();
-  redirect(str(f, "next", 200) || "/admin");
-}
 export async function logout() {
-  await clearAdminCookie();
+  await endSession();
   redirect("/");
 }
 
@@ -111,9 +106,9 @@ export async function saveProductAction(_: FormState, f: FormData): Promise<Form
   const order = String(f.get("order") || "");
   let images = [...keep, ...added];
   if (order) {
-    // thứ tự do người dùng kéo/đổi; ảnh mới thêm nối vào cuối
-    const ord = order.split("|").filter((u) => images.includes(u));
-    images = [...ord, ...images.filter((u) => !ord.includes(u))];
+    // thứ tự người dùng sắp; "new:i" là ảnh mới thứ i trong lần gửi này
+    const ord = order.split("|").map((t) => (t.startsWith("new:") ? added[Number(t.slice(4))] : t)).filter((u): u is string => Boolean(u) && images.includes(u));
+    images = [...new Set([...ord, ...images])];
   }
   const p = await db.saveProduct({
     id,
