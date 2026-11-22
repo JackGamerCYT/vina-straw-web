@@ -135,8 +135,8 @@ export default async function Home() {
       <section id="phim" className="weave-dark scroll-mt-16 text-white">
         <div className="mx-auto max-w-[1240px] px-5 py-24 lg:px-8 lg:py-32">
           <Reveal className="grid gap-6 lg:grid-cols-2 lg:items-end">
-            <T k="home.film.title" as="h2" className="font-display block text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">Xem Vina-Straw trong 30 giây</T>
-            <T k="home.film.lead" as="p" multiline className="block max-w-lg text-lg text-white/70 lg:justify-self-end">Từ sợi rơm đến túi giấy và tấm lót nhóm tự làm. Phim ghép cảnh quay sản phẩm thật với mô hình 3D của các mẫu đang thiết kế.</T>
+            <T k="home.film.title" as="h2" className="font-display block text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">Sản phẩm thật của Vina-Straw</T>
+            <T k="home.film.lead" as="p" multiline className="block max-w-lg text-lg text-white/70 lg:justify-self-end">Túi giấy rơm và tấm lót rơm do nhóm tự làm, quay ngoài nắng trên cỏ.</T>
           </Reveal>
           <Reveal delay={100} className="mt-12">
             <FilmPlayer src="/video/film.mp4" poster="/video/film-poster.jpg" />
