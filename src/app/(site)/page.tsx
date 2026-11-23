@@ -11,7 +11,8 @@ import { ProductCard } from "@/components/product-card";
 import { LineTabs, type Line } from "@/components/line-tabs";
 import { ContactForm } from "@/components/site-forms";
 import { T, EImg } from "@/components/editable";
-import { getSettings, listPosts, listProducts } from "@/lib/db";
+import { getSettings, listPosts, listProducts, strawTotals } from "@/lib/db";
+import { CO2E_PER_G, carbonOf, fmtCredits, fmtMass } from "@/lib/carbon";
 import { dayParts, isRender } from "@/lib/format";
 
 export const revalidate = 60;
@@ -51,7 +52,8 @@ function Heading({ k, kicker, title, lead, light = false }: { k: string; kicker:
 }
 
 export default async function Home() {
-  const [s, products, posts] = await Promise.all([getSettings(), listProducts(), listPosts({ limit: 3 })]);
+  const [s, products, posts, st] = await Promise.all([getSettings(), listProducts(), listPosts({ limit: 3 }), strawTotals()]);
+  const carbon = carbonOf(st.all);
   const featured = products.filter((p) => p.featured);
   const shown = [...featured, ...products.filter((p) => !p.featured)].slice(0, 8);
   const lineNames = [...new Set(products.map((p) => p.line))];
@@ -183,6 +185,24 @@ export default async function Home() {
               <EImg k="home.cta.img" src="/img/real/tui-cam-tay.webp" alt="Túi giấy rơm và tấm lót rơm Vina-Straw" fill sizes="(min-width:1024px) 560px, 100vw" className="object-cover" />
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ───────── Tín chỉ carbon ───────── */}
+      <section className="mx-auto max-w-[1320px] px-5 pb-24 lg:px-8">
+        <div className="grid items-center gap-10 rounded-[36px] bg-mist p-8 sm:p-12 lg:grid-cols-[1.1fr_1fr]">
+          <div>
+            <T k="home.carbon.kicker" as="p" className="block text-sm font-semibold uppercase tracking-[0.18em] text-sprout">Tín chỉ carbon</T>
+            <T k="home.carbon.title" as="h2" className="font-display mt-3 block text-4xl font-bold leading-[1.08] tracking-tight text-leaf-900 sm:text-5xl">Mỗi đơn hàng giữ lại một phần rơm khỏi bị đốt</T>
+            <T k="home.carbon.lead" as="p" multiline className="mt-5 block text-lg text-ink-soft">Khi bạn chọn sản phẩm, web ước tính lượng rơm được giữ lại, lượng khí nhà kính tránh được và số tín chỉ carbon tương ứng. Phần này được cộng dồn vào tài khoản của bạn.</T>
+            <p className="mt-3 text-sm text-ink-soft">Khoảng {CO2E_PER_G.toLocaleString("vi-VN", { maximumFractionDigits: 3 })} kg CO2e cho mỗi kg rơm không bị đốt. Số ước tính, không phải tín chỉ đã chứng nhận.</p>
+            <Link href="/tin-chi-carbon" className="btn-primary mt-8 !px-7 !py-4">Tính thử cho đơn của bạn <ArrowUpRight className="h-4 w-4" /></Link>
+          </div>
+          <dl className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+            <div className="rounded-[24px] bg-white p-6"><dt className="text-ink-soft">Rơm khách hàng đã giúp giữ lại</dt><dd className="font-display mt-1 text-4xl font-bold">{fmtMass(carbon.strawG)}</dd></div>
+            <div className="rounded-[24px] bg-white p-6"><dt className="text-ink-soft">CO2e không thải ra</dt><dd className="font-display mt-1 text-4xl font-bold text-leaf-700">{fmtMass(carbon.co2eG)}</dd></div>
+            <div className="rounded-[24px] bg-leaf-700 p-6 text-white"><dt className="text-white/70">Tín chỉ carbon tích luỹ</dt><dd className="font-display mt-1 text-4xl font-bold text-straw-300">{fmtCredits(carbon.credits)}</dd></div>
+          </dl>
         </div>
       </section>
 

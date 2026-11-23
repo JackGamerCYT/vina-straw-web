@@ -9,8 +9,10 @@ import { clearCart, useCart, writeCart } from "./cart";
 import { placeOrder } from "@/lib/shop-actions";
 import { isRender, vnd } from "@/lib/format";
 import { shippingFor, type Shop } from "@/lib/types";
+import { carbonOf } from "@/lib/carbon";
+import { CarbonCard } from "./carbon";
 
-export type Lite = { id: number; slug: string; name: string; price: number; unit: string; moq: number; image: string };
+export type Lite = { id: number; slug: string; name: string; price: number; unit: string; moq: number; image: string; straw: number };
 
 function useLines(products: Lite[]) {
   const cart = useCart();
@@ -18,7 +20,8 @@ function useLines(products: Lite[]) {
   useEffect(() => setReady(true), []);
   const lines = cart.map((l) => ({ ...l, p: products.find((p) => p.id === l.id) })).filter((l): l is typeof l & { p: Lite } => Boolean(l.p));
   const subtotal = lines.reduce((t, l) => t + l.qty * l.p.price, 0);
-  return { ready, lines, subtotal, cart };
+  const carbon = carbonOf(lines.reduce((t, l) => t + l.qty * l.p.straw, 0));
+  return { ready, lines, subtotal, cart, carbon };
 }
 
 function Thumb({ src }: { src: string }) {
@@ -42,7 +45,7 @@ function Totals({ subtotal, shop }: { subtotal: number; shop: Shop }) {
 }
 
 export function CartView({ products, shop }: { products: Lite[]; shop: Shop }) {
-  const { ready, lines, subtotal, cart } = useLines(products);
+  const { ready, lines, subtotal, cart, carbon } = useLines(products);
   const set = (id: number, qty: number) => writeCart(cart.map((l) => (l.id === id ? { ...l, qty } : l)).filter((l) => l.qty > 0));
   if (!ready) return <div className="mt-10 h-40 animate-pulse rounded-3xl bg-mist" />;
   if (lines.length === 0) {
@@ -80,6 +83,7 @@ export function CartView({ products, shop }: { products: Lite[]; shop: Shop }) {
       </ul>
       <aside className="panel space-y-6 self-start p-6 lg:sticky lg:top-28">
         <Totals subtotal={subtotal} shop={shop} />
+        <CarbonCard c={carbon} title="Giỏ hàng này giúp" compact />
         <Link href="/thanh-toan" aria-disabled={lines.some((l) => l.qty < l.p.moq)} className={`btn-primary w-full !py-4 ${lines.some((l) => l.qty < l.p.moq) ? "pointer-events-none opacity-50" : ""}`}>Đặt hàng <ArrowRight className="h-4 w-4" /></Link>
         <p className="flex gap-2 text-sm text-ink-soft"><Truck className="h-4 w-4 shrink-0" /> {shop.shipNote}</p>
       </aside>
@@ -90,7 +94,7 @@ export function CartView({ products, shop }: { products: Lite[]; shop: Shop }) {
 type Me = { name: string; phone: string; email: string; address: string; company: string } | null;
 
 export function CheckoutForm({ products, shop, me }: { products: Lite[]; shop: Shop; me: Me }) {
-  const { ready, lines, subtotal } = useLines(products);
+  const { ready, lines, subtotal, carbon } = useLines(products);
   const [pending, start] = useTransition();
   const [err, setErr] = useState("");
   const router = useRouter();
@@ -160,6 +164,7 @@ export function CheckoutForm({ products, shop, me }: { products: Lite[]; shop: S
           ))}
         </ul>
         <Totals subtotal={subtotal} shop={shop} />
+        <CarbonCard c={carbon} title="Đơn hàng này giúp" compact />
         {err && <p role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{err}</p>}
         <button disabled={pending} className="btn-primary w-full !py-4 text-base">{pending ? "Đang đặt hàng…" : "Đặt hàng"}</button>
         <p className="text-xs text-ink-soft">Bấm Đặt hàng là bạn đồng ý để Vina-Straw liên hệ xác nhận đơn qua số điện thoại đã nhập.</p>

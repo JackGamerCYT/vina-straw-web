@@ -65,6 +65,7 @@ export function ProductEditor({ p }: { p: Product | null }) {
               <div><label className="label">Giá (₫)</label><input name="price" type="number" min={0} defaultValue={p?.price ?? 0} className="field" /></div>
               <div><label className="label">Đơn vị</label><input name="unit" defaultValue={p?.unit ?? "cái"} className="field" /></div>
               <div><label className="label">SL tối thiểu</label><input name="moq" type="number" min={1} defaultValue={p?.moq ?? 100} className="field" /></div>
+              <div><label className="label">Rơm / 1 đơn vị (g)</label><input name="strawGrams" type="number" min={0} defaultValue={p?.strawGrams ?? 0} className="field" title="Dùng để tính CO2e tránh được và tín chỉ carbon" /></div>
               <div><label className="label">Thứ tự</label><input name="sort" type="number" defaultValue={p?.sort ?? 10} className="field" /></div>
             </div>
             <label className="flex items-center gap-3 font-medium"><input type="checkbox" name="active" defaultChecked={p?.active ?? true} className="h-5 w-5 accent-leaf-700" /> Hiện trên web</label>

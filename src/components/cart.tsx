@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Minus, Plus, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
+import { CarbonCard } from "./carbon";
+import { carbonOf } from "@/lib/carbon";
 
 export type CartLine = { id: number; qty: number };
 const KEY = "vs-cart";
@@ -59,7 +61,7 @@ export function CartBadge() {
 }
 
 /** Chọn số lượng + thêm vào giỏ / mua ngay (trang chi tiết sản phẩm). */
-export function BuyBox({ id, moq, unit }: { id: number; moq: number; unit: string }) {
+export function BuyBox({ id, moq, unit, straw = 0 }: { id: number; moq: number; unit: string; straw?: number }) {
   const [qty, setQty] = useState(moq);
   const router = useRouter();
   const step = moq >= 100 ? moq : 1;
@@ -69,6 +71,7 @@ export function BuyBox({ id, moq, unit }: { id: number; moq: number; unit: strin
     else toast.success("Đã thêm vào giỏ", { action: { label: "Xem giỏ", onClick: () => router.push("/gio-hang") } });
   };
   return (
+    <div className="space-y-4">
     <div className="flex flex-wrap items-center gap-3">
       <div className="flex items-center gap-1 rounded-full border border-ink/15 p-1">
         <button type="button" onClick={() => setQty((q) => Math.max(moq, q - step))} className="grid h-10 w-10 place-items-center rounded-full hover:bg-mist" aria-label="Giảm"><Minus className="h-4 w-4" /></button>
@@ -78,6 +81,8 @@ export function BuyBox({ id, moq, unit }: { id: number; moq: number; unit: strin
       <span className="text-sm text-ink-soft">{unit}</span>
       <button type="button" onClick={() => add(false)} className="btn-ghost !px-6 !py-3.5"><ShoppingBag className="h-4 w-4" /> Thêm vào giỏ</button>
       <button type="button" onClick={() => add(true)} className="btn-primary !px-7 !py-3.5">Mua ngay</button>
+    </div>
+    <CarbonCard c={carbonOf(Math.max(moq, qty) * straw)} title={`Nếu mua ${Math.max(moq, qty).toLocaleString("vi-VN")} ${unit}`} compact />
     </div>
   );
 }

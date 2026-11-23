@@ -11,7 +11,7 @@ const NAV = [
   { href: "/", label: "Trang chủ" },
   { href: "/gioi-thieu", label: "Giới thiệu" },
   { href: "/san-pham", label: "Sản phẩm", sub: true },
-  { href: "/#quy-trinh", label: "Quy trình" },
+  { href: "/tin-chi-carbon", label: "Tín chỉ carbon" },
   { href: "/tin-tuc", label: "Tin tức" },
   { href: "/lien-he", label: "Liên hệ" },
 ];

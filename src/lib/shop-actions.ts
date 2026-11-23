@@ -106,7 +106,7 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
       if (!p || !(qty > 0)) continue;
       if (p.price <= 0) return { error: `“${p.name}” chưa có giá bán lẻ. Hãy gửi yêu cầu báo giá cho sản phẩm này.` };
       if (qty < p.moq) return { error: `“${p.name}” cần đặt tối thiểu ${p.moq.toLocaleString("vi-VN")} ${p.unit}.` };
-      items.push({ productId: p.id, name: p.name, qty: Math.min(qty, 10_000_000), unit: p.unit, price: p.price });
+      items.push({ productId: p.id, name: p.name, qty: Math.min(qty, 10_000_000), unit: p.unit, price: p.price, straw: p.strawGrams });
     }
     if (items.length === 0) return { error: "Giỏ hàng đang trống." };
     const subtotal = items.reduce((t, i) => t + i.qty * i.price, 0);

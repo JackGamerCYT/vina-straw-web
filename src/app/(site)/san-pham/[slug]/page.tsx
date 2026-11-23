@@ -9,6 +9,8 @@ import { isAdmin } from "@/lib/auth";
 import { priceText } from "@/lib/format";
 import { Gallery } from "./gallery";
 import { BuyBox } from "@/components/cart";
+import { CarbonCard } from "@/components/carbon";
+import { carbonOf } from "@/lib/carbon";
 
 export const revalidate = 60;
 
@@ -42,7 +44,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <span className="font-display text-4xl font-bold text-leaf-700">{priceText(p.price)}</span>
               <span className="pb-1 text-ink-soft">{p.price > 0 ? `/ ${p.unit} · ` : "giá theo số lượng · "}tối thiểu {p.moq.toLocaleString("vi-VN")} {p.unit}</span>
             </div>
-            {p.price > 0 && <div className="mt-6"><BuyBox id={p.id} moq={p.moq} unit={p.unit} /></div>}
+            {p.price > 0 ? <div className="mt-6"><BuyBox id={p.id} moq={p.moq} unit={p.unit} straw={p.strawGrams} /></div> : p.strawGrams > 0 && <div className="mt-6"><CarbonCard c={carbonOf(p.strawGrams * p.moq)} title={`Mỗi ${p.moq > 1 ? p.moq.toLocaleString("vi-VN") + " " : ""}${p.unit} giúp`} compact /></div>}
             <div className="mt-4 flex flex-wrap gap-3">
               <Link href={`/bao-gia?sp=${p.id}`} className={`${p.price > 0 ? "btn-ghost" : "btn-primary"} group !px-7 !py-4 text-base`}>{p.price > 0 ? "Cần số lượng lớn? Nhận báo giá" : "Nhận báo giá sản phẩm này"} <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></Link>
               <Link href={`/bao-gia?sp=${p.id}&loai=mau`} className="btn-ghost !px-7 !py-4 text-base">Đặt mẫu thử</Link>

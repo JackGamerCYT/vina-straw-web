@@ -15,9 +15,11 @@ export type Product = {
   featured: boolean;
   active: boolean;
   sort: number;
+  /** gam rơm trong 1 đơn vị sản phẩm (dùng tính CO2e tránh được) */
+  strawGrams: number;
 };
 
-export type OrderItem = { productId: number; name: string; qty: number; unit: string; price: number };
+export type OrderItem = { productId: number; name: string; qty: number; unit: string; price: number; straw?: number };
 
 export type OrderStatus = "NEW" | "QUOTING" | "QUOTED" | "CONFIRMED" | "SHIPPING" | "DONE" | "CANCELLED";
 export type PaymentStatus = "UNPAID" | "PAID" | "REFUNDED";

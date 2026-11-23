@@ -27,6 +27,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     featured: true,
     active: true,
     sort: -2,
+    strawGrams: 30,
   },
   {
     slug: "tam-lot-rom",
@@ -48,6 +49,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     featured: true,
     active: true,
     sort: -1,
+    strawGrams: 80,
   },
   {
     slug: "to-rom-500ml",
@@ -70,6 +72,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     featured: true,
     active: true,
     sort: 1,
+    strawGrams: 12,
   },
   {
     slug: "ly-rom-250ml",
@@ -91,6 +94,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     featured: true,
     active: true,
     sort: 2,
+    strawGrams: 6,
   },
   {
     slug: "chen-rom-250ml",
@@ -112,6 +116,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     featured: false,
     active: true,
     sort: 3,
+    strawGrams: 7,
   },
   {
     slug: "dia-rom-220",
@@ -133,6 +138,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     featured: true,
     active: true,
     sort: 4,
+    strawGrams: 14,
   },
   {
     slug: "tui-flex-pack",
@@ -154,6 +160,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     featured: true,
     active: true,
     sort: 5,
+    strawGrams: 25,
   },
   {
     slug: "dem-romcell-cushion",
@@ -175,6 +182,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     featured: false,
     active: true,
     sort: 6,
+    strawGrams: 40,
   },
   {
     slug: "cuon-mang-biofilm",
@@ -196,6 +204,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     featured: false,
     active: true,
     sort: 7,
+    strawGrams: 200,
   },
   {
     slug: "tam-romtherm-mineral",
@@ -217,6 +226,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     featured: false,
     active: true,
     sort: 8,
+    strawGrams: 2000,
   },
 ];
 

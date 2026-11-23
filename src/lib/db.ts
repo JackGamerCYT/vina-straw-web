@@ -81,6 +81,7 @@ async function init() {
     "customer_id INTEGER", "payment_method TEXT NOT NULL DEFAULT ''", "payment_status TEXT NOT NULL DEFAULT 'UNPAID'",
     "shipping_fee INTEGER NOT NULL DEFAULT 0", "subtotal INTEGER NOT NULL DEFAULT 0",
   ]) await q(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ${col}`);
+  await q(`ALTER TABLE products ADD COLUMN IF NOT EXISTS straw_g INTEGER NOT NULL DEFAULT 0`);
   const [{ n }] = await q<{ n: number }>(`SELECT count(*)::int AS n FROM products`);
   if (n === 0) {
     for (const p of SEED_PRODUCTS) {
@@ -125,6 +126,13 @@ MIGRATIONS.push({
     }
   },
 });
+MIGRATIONS.push({
+  id: "2026-11-straw-grams",
+  run: async () => {
+    // Lượng rơm ước tính cho các sản phẩm mẫu; chỉ ghi vào sản phẩm chưa có số liệu.
+    for (const p of SEED_PRODUCTS) await q(`UPDATE products SET straw_g=$2 WHERE slug=$1 AND straw_g=0`, [p.slug, p.strawGrams]);
+  },
+});
 async function migrate() {
   const [row] = await q<{ value: string[] }>(`SELECT value FROM settings WHERE key='_migrations'`);
   const done = new Set(row?.value ?? []);
@@ -145,7 +153,7 @@ const toProduct = (r: Row): Product => ({
   id: Number(r.id), slug: String(r.slug), name: String(r.name), line: String(r.line), short: String(r.short),
   description: String(r.description), price: Number(r.price), unit: String(r.unit), moq: Number(r.moq),
   specs: (r.specs as Spec[]) ?? [], images: (r.images as string[]) ?? [], featured: Boolean(r.featured),
-  active: Boolean(r.active), sort: Number(r.sort),
+  active: Boolean(r.active), sort: Number(r.sort), strawGrams: Number(r.straw_g ?? 0),
 });
 const toOrder = (r: Row): Order => ({
   id: Number(r.id), code: String(r.code), token: String(r.token), kind: String(r.kind), name: String(r.name),
@@ -184,12 +192,12 @@ export async function saveProduct(p: Omit<Product, "id"> & { id?: number }): Pro
     if (p.id) { const i = m.products.findIndex((x) => x.id === p.id); m.products[i] = { ...(p as Product) }; return m.products[i]; }
     const np = { ...p, id: Math.max(0, ...m.products.map((x) => x.id)) + 1 } as Product; m.products.push(np); return np;
   }
-  const vals = [p.slug, p.name, p.line, p.short, p.description, p.price, p.unit, p.moq, JSON.stringify(p.specs), JSON.stringify(p.images), p.featured, p.active, p.sort];
+  const vals = [p.slug, p.name, p.line, p.short, p.description, p.price, p.unit, p.moq, JSON.stringify(p.specs), JSON.stringify(p.images), p.featured, p.active, p.sort, p.strawGrams ?? 0];
   if (p.id) {
-    const [r] = await q(`UPDATE products SET slug=$1,name=$2,line=$3,short=$4,description=$5,price=$6,unit=$7,moq=$8,specs=$9,images=$10,featured=$11,active=$12,sort=$13 WHERE id=$14 RETURNING *`, [...vals, p.id]);
+    const [r] = await q(`UPDATE products SET slug=$1,name=$2,line=$3,short=$4,description=$5,price=$6,unit=$7,moq=$8,specs=$9,images=$10,featured=$11,active=$12,sort=$13,straw_g=$14 WHERE id=$15 RETURNING *`, [...vals, p.id]);
     return toProduct(r);
   }
-  const [r] = await q(`INSERT INTO products (slug,name,line,short,description,price,unit,moq,specs,images,featured,active,sort) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`, vals);
+  const [r] = await q(`INSERT INTO products (slug,name,line,short,description,price,unit,moq,specs,images,featured,active,sort,straw_g) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`, vals);
   return toProduct(r);
 }
 export async function deleteProduct(id: number) {
@@ -524,4 +532,12 @@ export async function deleteSubscriber(id: number) {
   await ready();
   if (!hasDatabase) { const m = mem(); m.subs = m.subs.filter((v) => v.id !== id); return; }
   await q(`DELETE FROM subscribers WHERE id=$1`, [id]);
+}
+
+/** Tổng rơm (gam) của các đơn chưa huỷ: toàn web hoặc của một khách. */
+export async function strawTotals(customerId?: number) {
+  const orders = customerId ? await listOrdersByCustomer(customerId) : await listOrders();
+  const live = orders.filter((o) => o.status !== "CANCELLED");
+  const grams = (os: Order[]) => os.reduce((t, o) => t + o.items.reduce((s, i) => s + i.qty * (i.straw ?? 0), 0), 0);
+  return { all: grams(live), done: grams(live.filter((o) => o.status === "DONE" || o.paymentStatus === "PAID")), orders: live.length };
 }

@@ -5,6 +5,8 @@ import { CheckCircle2, Landmark, Lock } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { OrderForm } from "@/components/order-form";
 import { getOrderByCode, getShop, listProducts } from "@/lib/db";
+import { CarbonCard } from "@/components/carbon";
+import { sumCarbon } from "@/lib/carbon";
 import { CHECKOUT_KIND, EDITABLE, METHOD_LABEL, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/types";
 import { fmtDate, vnd } from "@/lib/format";
 
@@ -84,6 +86,7 @@ export default async function MyOrder({ params, searchParams }: { params: Promis
                   </dl>
                 </div>
               )}
+              <CarbonCard c={sumCarbon(order.items)} title="Đơn hàng này giúp" compact />
               <p className="text-sm text-ink-soft">Cần đổi thông tin đơn? Liên hệ cửa hàng, hoặc xem <Link href="/tai-khoan" className="underline">đơn trong tài khoản</Link>.</p>
             </div>
           </section>

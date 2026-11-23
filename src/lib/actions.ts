@@ -28,7 +28,7 @@ async function readOrderForm(f: FormData) {
   const items: OrderItem[] = [];
   for (const p of products) {
     const qty = Math.max(0, Math.min(10_000_000, Math.floor(Number(f.get(`qty_${p.id}`) || 0))));
-    if (qty > 0) items.push({ productId: p.id, name: p.name, qty, unit: p.unit, price: p.price });
+    if (qty > 0) items.push({ productId: p.id, name: p.name, qty, unit: p.unit, price: p.price, straw: p.strawGrams });
   }
   if (items.length === 0) return { error: "Chọn ít nhất một sản phẩm và số lượng." } as const;
 
@@ -126,6 +126,7 @@ export async function saveProductAction(_: FormState, f: FormData): Promise<Form
     featured: f.get("featured") === "on",
     active: f.get("active") === "on",
     sort: Math.floor(Number(f.get("sort") || 0)),
+    strawGrams: Math.max(0, Math.min(10_000_000, Math.round(Number(f.get("strawGrams") || 0)))),
   });
   revalidatePath("/", "layout");
   if (!id) redirect(`/admin/san-pham/${p.id}?saved=1`);

@@ -7,7 +7,7 @@ import { NewsletterForm } from "./site-forms";
 import { fmtDay } from "@/lib/format";
 import type { Post, Settings } from "@/lib/types";
 
-const LINKS = [["/gioi-thieu", "Giới thiệu"], ["/san-pham", "Sản phẩm"], ["/tin-tuc", "Tin tức"], ["/lien-he", "Liên hệ"], ["/bao-gia", "Nhận báo giá"], ["/don-hang", "Tra cứu đơn hàng"], ["/tai-khoan", "Tài khoản của tôi"]];
+const LINKS = [["/gioi-thieu", "Giới thiệu"], ["/san-pham", "Sản phẩm"], ["/tin-tuc", "Tin tức"], ["/tin-chi-carbon", "Tín chỉ carbon"], ["/lien-he", "Liên hệ"], ["/bao-gia", "Nhận báo giá"], ["/don-hang", "Tra cứu đơn hàng"], ["/tai-khoan", "Tài khoản của tôi"]];
 
 export function Footer({ s, posts = [], lines = [] }: { s: Settings; posts?: Post[]; lines?: string[] }) {
   const tel = `tel:${s.contactPhone.replace(/[^\d+]/g, "")}`;

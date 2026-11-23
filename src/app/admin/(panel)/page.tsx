@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { ArrowRight, Banknote, Package, Pencil, ShoppingCart, Users } from "lucide-react";
-import { stats } from "@/lib/db";
+import { stats, strawTotals } from "@/lib/db";
+import { carbonOf, fmtCredits, fmtMass } from "@/lib/carbon";
 import { fmtDate, vnd } from "@/lib/format";
 import { PAYMENT_LABEL, STATUS_LABEL } from "@/lib/types";
 
 export default async function Dashboard() {
-  const s = await stats();
+  const [s, st] = await Promise.all([stats(), strawTotals()]);
+  const c = carbonOf(st.all);
   const cards = [
     { t: "Đơn mới chờ xử lý", v: s.newOrders.toLocaleString("vi-VN"), href: "/admin/don-hang?tt=NEW", Icon: ShoppingCart },
     { t: "Doanh thu 30 ngày (đã thu)", v: vnd(s.revenue30), href: "/admin/don-hang?loai=mua", Icon: Banknote },
@@ -31,6 +33,11 @@ export default async function Dashboard() {
         <div className="panel p-5"><p className="text-sm text-ink-soft">Đơn trong 30 ngày</p><p className="font-display mt-1 text-2xl font-bold">{s.orders30}</p></div>
         <div className="panel p-5"><p className="text-sm text-ink-soft">Đơn mua chưa thanh toán</p><p className="font-display mt-1 text-2xl font-bold text-soil-700">{s.unpaid}</p></div>
         <div className="panel p-5"><p className="text-sm text-ink-soft">Tổng doanh thu đã thu</p><p className="font-display mt-1 text-2xl font-bold text-leaf-700">{vnd(s.revenueAll)}</p></div>
+      </div>
+      <div className="mt-4 grid gap-4 rounded-[24px] bg-leaf-700 p-6 text-white sm:grid-cols-3">
+        <div><p className="text-sm text-white/70">Rơm giữ lại qua các đơn</p><p className="font-display mt-1 text-2xl font-bold">{fmtMass(c.strawG)}</p></div>
+        <div><p className="text-sm text-white/70">CO2e tránh được (ước tính)</p><p className="font-display mt-1 text-2xl font-bold">{fmtMass(c.co2eG)}</p></div>
+        <div><p className="text-sm text-white/70">Tín chỉ carbon tích luỹ</p><p className="font-display mt-1 text-2xl font-bold text-straw-300">{fmtCredits(c.credits)}</p></div>
       </div>
       <section className="panel mt-8 overflow-hidden">
         <div className="flex items-center justify-between border-b border-ink/10 p-5">
