@@ -1,4 +1,4 @@
-import type { Product, Settings } from "./types";
+import type { Post, Product, Settings } from "./types";
 
 type SeedProduct = Omit<Product, "id">;
 
@@ -234,3 +234,75 @@ export const DEFAULT_SETTINGS: Settings = {
   contactAddress: "Thủ Đức, TP. Hồ Chí Minh",
   team: "Nhóm Vina-Straw",
 };
+
+/** Bài viết mẫu, nạp một lần (migration). Chủ trang sửa hoặc xoá ở /admin/tin-tuc. */
+export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
+  {
+    slug: "mau-tui-giay-va-tam-lot-rom-dau-tien",
+    title: "Vina-Straw hoàn thành mẫu túi giấy rơm và tấm lót rơm đầu tiên",
+    excerpt: "Sau nhiều lần thử phối liệu, nhóm đã làm ra hai mẫu thật: túi giấy từ xơ rơm có quai dây thừng và tấm lót ép từ sợi rơm vàng.",
+    cover: "/img/real/bo-san-pham.webp",
+    published: true,
+    body: `Hai sản phẩm đầu tiên nhóm Vina-Straw làm ra bằng tay là túi giấy rơm và tấm lót rơm. Cả hai đều dùng rơm rạ sau thu hoạch làm nguyên liệu chính.
+
+## Túi giấy rơm
+
+Túi được làm từ bột xơ rơm, giữ màu trắng ngà tự nhiên. Nhìn gần vẫn thấy những sợi rơm nhỏ trên bề mặt, nên mỗi chiếc có vân hơi khác nhau. Hiện có hai kiểu: túi đứng có quai dây thừng và túi dẹt đục lỗ luồn dây.
+
+## Tấm lót rơm
+
+Tấm lót được ép từ sợi rơm vàng, giữ nguyên màu rơm và gắn tem logo tròn Vina-Straw. Tấm lót dùng để lót, chèn hàng trong hộp hoặc trang trí khi trưng bày.
+
+## Bước tiếp theo
+
+Kích thước, định lượng và giá của hai mẫu đang được hoàn thiện. Các tính năng như kháng nước hay phân huỷ sinh học sẽ chỉ được công bố sau khi có kết quả kiểm nghiệm. Nếu bạn muốn nhận mẫu thử, hãy gửi yêu cầu ở trang Nhận báo giá.`,
+  },
+  {
+    slug: "vi-sao-khong-nen-dot-rom-ra",
+    title: "Mỗi năm Việt Nam có bao nhiêu rơm rạ, và vì sao không nên đốt?",
+    excerpt: "Sau mỗi vụ lúa, đồng ruộng để lại một lượng rơm rất lớn. Phần lớn bị đốt ngay tại ruộng, vừa gây khói bụi vừa bỏ phí một nguồn xơ thực vật.",
+    cover: "/img/field-burnt.webp",
+    published: true,
+    body: `Theo Báo Nhân Dân (2025) dẫn số liệu ngành nông nghiệp, mỗi năm Việt Nam có khoảng 47 triệu tấn rơm rạ. Viện Nghiên cứu Lúa Quốc tế (IRRI) ước tính trên 20 triệu tấn trong số đó bị đốt bỏ.
+
+## Đốt rơm gây hại gì?
+
+Đốt rơm tạo khói và bụi mịn, ảnh hưởng tới người dân sống gần ruộng và cả các tuyến đường đi qua. Lửa cũng làm mất phần chất hữu cơ mà rơm có thể trả lại cho đất.
+
+## Rơm có thể làm gì khác?
+
+Rơm là nguồn xơ thực vật sẵn có, giá rẻ và có lại sau mỗi vụ. Ngoài làm nấm, ủ phân hay thức ăn gia súc, rơm có thể trở thành nguyên liệu cho bao bì. Đây là hướng Vina-Straw đang thử: giữ lại sợi rơm, làm sạch, phối với các thành phần gốc thực vật rồi ép thành túi, tấm lót, tô và ly.
+
+## Nguồn
+
+Báo Nhân Dân (2025); Viện Nghiên cứu Lúa Quốc tế (IRRI).`,
+  },
+  {
+    slug: "tu-bo-rom-den-bao-bi-5-cong-doan",
+    title: "Từ bó rơm đến bao bì: 5 công đoạn của Vina-Straw",
+    excerpt: "Thu gom, làm sạch và mở xơ, phối liệu, ép khuôn, rồi kiểm tra. Mỗi công đoạn đều ghi thông số để mẫu sau giống mẫu trước.",
+    cover: "/img/real/soi-rom.webp",
+    published: true,
+    body: `Một chiếc túi hay tấm lót Vina-Straw đi qua năm công đoạn.
+
+## 1. Thu gom rơm sau vụ gặt
+
+Rơm khô, không mốc, được gom ngay trên ruộng thay vì đốt. Mỗi lô ghi nguồn, ngày thu và độ ẩm.
+
+## 2. Làm sạch và mở xơ
+
+Rơm được rửa bỏ đất cát, cắt ngắn, đánh tơi rồi rây để tách phần sợi mịn và bó sợi dài.
+
+## 3. Phối liệu gốc thực vật
+
+Xơ rơm được trộn với bột giấy carton sạch, hồ tinh bột sắn và alginate. Nhóm không dùng keo nhựa tổng hợp.
+
+## 4. Ép khuôn và sấy
+
+Hỗn hợp được tạo hình trên khuôn, ép rồi sấy đến khi khối lượng ổn định.
+
+## 5. Kiểm tra
+
+Mỗi mẻ được kiểm tra hình dạng, độ chắc và các lỗi bề mặt. Những chỉ tiêu như kháng nước sẽ chỉ công bố sau khi có kết quả kiểm nghiệm của bên thứ ba.`,
+  },
+];

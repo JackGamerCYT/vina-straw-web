@@ -1,13 +1,15 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Images, LayoutDashboard, Package, Settings, ShieldCheck, ShoppingCart, Users } from "lucide-react";
+import { FileText, Images, Inbox, LayoutDashboard, Newspaper, Package, Settings, ShieldCheck, ShoppingCart, Users } from "lucide-react";
 
 const L = [
   ["/admin", "Tổng quan", LayoutDashboard],
   ["/admin/don-hang", "Đơn hàng", ShoppingCart],
   ["/admin/san-pham", "Sản phẩm", Package],
   ["/admin/khach-hang", "Khách hàng", Users],
+  ["/admin/hop-thu", "Hộp thư", Inbox],
+  ["/admin/tin-tuc", "Tin tức", Newspaper],
   ["/admin/thu-vien", "Thư viện ảnh", Images],
   ["/admin/noi-dung", "Nội dung trang", FileText],
   ["/admin/cai-dat", "Cài đặt bán hàng", Settings],

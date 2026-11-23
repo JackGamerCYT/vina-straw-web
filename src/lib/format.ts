@@ -8,3 +8,9 @@ export const fmtDate = (s: string) =>
 export const slugify = (s: string) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D")
     .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+export const fmtDay = (s: string) =>
+  new Date(s).toLocaleDateString("vi-VN", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Ho_Chi_Minh" });
+export const dayParts = (s: string) => {
+  const d = new Date(new Date(s).toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+  return { d: String(d.getDate()).padStart(2, "0"), m: `Th${d.getMonth() + 1}` };
+};

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ExternalLink, LogOut } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
-import { hasDatabase, listAdmins, listOrders } from "@/lib/db";
+import { hasDatabase, listAdmins, listMessages, listOrders } from "@/lib/db";
 import { hasBlob } from "@/lib/upload";
 import { logout } from "@/lib/actions";
 import { Logo } from "@/components/logo";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const me = await requireAdmin();
-  const [admins, orders] = await Promise.all([me.role === "OWNER" ? listAdmins() : Promise.resolve([]), listOrders()]);
+  const [admins, orders, msgs] = await Promise.all([me.role === "OWNER" ? listAdmins() : Promise.resolve([]), listOrders(), listMessages()]);
   const waiting = admins.filter((a) => a.status === "PENDING").length;
   const fresh = orders.filter((o) => o.status === "NEW").length;
   const warn = [
@@ -33,7 +33,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </header>
       <div className="mx-auto grid max-w-[1440px] gap-6 px-5 py-6 lg:grid-cols-[230px_1fr] lg:px-8">
-        <aside className="lg:sticky lg:top-22 lg:self-start"><AdminNav badges={{ "/admin/don-hang": fresh, "/admin/tai-khoan": waiting }} /></aside>
+        <aside className="lg:sticky lg:top-22 lg:self-start"><AdminNav badges={{ "/admin/don-hang": fresh, "/admin/tai-khoan": waiting, "/admin/hop-thu": msgs.filter((m) => !m.handled).length }} /></aside>
         <main className="min-w-0 pb-16">
           {warn.length > 0 && <ul className="mb-6 space-y-1 rounded-2xl bg-straw-100 p-4 text-sm text-soil-900">{warn.map((w) => <li key={w}>• {w}</li>)}</ul>}
           {children}

@@ -1,8 +1,8 @@
 import "server-only";
 import { neon } from "@neondatabase/serverless";
-import { DEFAULT_SETTINGS, REAL_SLUGS, SEED_PRODUCTS } from "./seed";
+import { DEFAULT_SETTINGS, REAL_SLUGS, SEED_POSTS, SEED_PRODUCTS } from "./seed";
 import { DEFAULT_SHOP } from "./types";
-import type { AdminRole, AdminStatus, AdminUser, Customer, Media, Order, OrderItem, OrderStatus, PaymentMethod, PaymentStatus, Product, Settings, Shop, Spec } from "./types";
+import type { AdminRole, AdminStatus, AdminUser, Customer, Media, Message, Post, Subscriber, Order, OrderItem, OrderStatus, PaymentMethod, PaymentStatus, Product, Settings, Shop, Spec } from "./types";
 
 const URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
 // Chỉ dùng khi kiểm thử trên máy: Postgres thật chạy trong tiến trình (PGlite).
@@ -21,7 +21,7 @@ async function q<T = Row>(text: string, params: unknown[] = []): Promise<T[]> {
 }
 
 /* ───────── Bộ nhớ tạm khi chưa nối Postgres (chỉ để xem thử) ───────── */
-type Mem = { products: Product[]; orders: Order[]; settings: Settings; seq: number; admins: AdminUser[]; kv: Record<string, unknown>; customers: Customer[]; media: Media[] };
+type Mem = { products: Product[]; orders: Order[]; settings: Settings; seq: number; admins: AdminUser[]; kv: Record<string, unknown>; customers: Customer[]; media: Media[]; posts: Post[]; messages: Message[]; subs: Subscriber[] };
 const g = globalThis as unknown as { __vsMem?: Mem; __vsReady?: Promise<void> };
 function mem(): Mem {
   if (!g.__vsMem) {
@@ -34,6 +34,9 @@ function mem(): Mem {
       kv: {},
       customers: [],
       media: [],
+      posts: SEED_POSTS.map((p, i) => ({ ...p, id: i + 1, createdAt: new Date(Date.now() - i * 86400_000).toISOString(), updatedAt: new Date().toISOString() })),
+      messages: [],
+      subs: [],
     };
   }
   return g.__vsMem;
@@ -65,6 +68,15 @@ async function init() {
   await q(`CREATE TABLE IF NOT EXISTS media (
     id SERIAL PRIMARY KEY, url TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', size INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+  await q(`CREATE TABLE IF NOT EXISTS posts (
+    id SERIAL PRIMARY KEY, slug TEXT UNIQUE NOT NULL, title TEXT NOT NULL, excerpt TEXT NOT NULL DEFAULT '',
+    body TEXT NOT NULL DEFAULT '', cover TEXT NOT NULL DEFAULT '', published BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+  await q(`CREATE TABLE IF NOT EXISTS messages (
+    id SERIAL PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL DEFAULT '', phone TEXT NOT NULL DEFAULT '',
+    subject TEXT NOT NULL DEFAULT '', message TEXT NOT NULL, handled BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+  await q(`CREATE TABLE IF NOT EXISTS subscribers (id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
   for (const col of [
     "customer_id INTEGER", "payment_method TEXT NOT NULL DEFAULT ''", "payment_status TEXT NOT NULL DEFAULT 'UNPAID'",
     "shipping_fee INTEGER NOT NULL DEFAULT 0", "subtotal INTEGER NOT NULL DEFAULT 0",
@@ -102,6 +114,14 @@ MIGRATIONS.push({
   run: async () => {
     for (const k of ["contactEmail", "contactPhone"] as const) {
       await q(`INSERT INTO settings (key,value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value`, [k, JSON.stringify(DEFAULT_SETTINGS[k])]);
+    }
+  },
+});
+MIGRATIONS.push({
+  id: "2026-11-seed-posts",
+  run: async () => {
+    for (const p of SEED_POSTS) {
+      await q(`INSERT INTO posts (slug,title,excerpt,body,cover,published) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (slug) DO NOTHING`, [p.slug, p.title, p.excerpt, p.body, p.cover, p.published]);
     }
   },
 });
@@ -429,4 +449,79 @@ export async function stats() {
     products: products.filter((p) => p.active).length,
     recent: orders.slice(0, 6),
   };
+}
+
+/* ───────── Tin tức ───────── */
+const toPost = (r: Row): Post => ({
+  id: Number(r.id), slug: String(r.slug), title: String(r.title), excerpt: String(r.excerpt), body: String(r.body), cover: String(r.cover),
+  published: Boolean(r.published), createdAt: new Date(r.created_at as string).toISOString(), updatedAt: new Date(r.updated_at as string).toISOString(),
+});
+export async function listPosts({ all = false, limit = 100 } = {}): Promise<Post[]> {
+  await ready();
+  if (!hasDatabase) return mem().posts.filter((p) => all || p.published).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit);
+  return (await q(`SELECT * FROM posts ${all ? "" : "WHERE published"} ORDER BY created_at DESC LIMIT $1`, [limit])).map(toPost);
+}
+export async function getPost(slugOrId: string | number) {
+  await ready();
+  const byId = typeof slugOrId === "number";
+  if (!hasDatabase) return mem().posts.find((p) => (byId ? p.id === slugOrId : p.slug === slugOrId)) ?? null;
+  const [r] = await q(`SELECT * FROM posts WHERE ${byId ? "id" : "slug"}=$1`, [slugOrId]);
+  return r ? toPost(r) : null;
+}
+export async function savePost(p: Omit<Post, "id" | "createdAt" | "updatedAt"> & { id?: number }) {
+  await ready();
+  if (!hasDatabase) {
+    const m = mem(); const now = new Date().toISOString();
+    if (p.id) { const x = m.posts.find((v) => v.id === p.id); if (x) Object.assign(x, p, { updatedAt: now }); return x!; }
+    const n: Post = { ...p, id: Math.max(0, ...m.posts.map((v) => v.id)) + 1, createdAt: now, updatedAt: now }; m.posts.push(n); return n;
+  }
+  if (p.id) {
+    const [r] = await q(`UPDATE posts SET slug=$2,title=$3,excerpt=$4,body=$5,cover=$6,published=$7,updated_at=now() WHERE id=$1 RETURNING *`, [p.id, p.slug, p.title, p.excerpt, p.body, p.cover, p.published]);
+    return toPost(r);
+  }
+  const [r] = await q(`INSERT INTO posts (slug,title,excerpt,body,cover,published) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`, [p.slug, p.title, p.excerpt, p.body, p.cover, p.published]);
+  return toPost(r);
+}
+export async function deletePost(id: number) {
+  await ready();
+  if (!hasDatabase) { const m = mem(); m.posts = m.posts.filter((p) => p.id !== id); return; }
+  await q(`DELETE FROM posts WHERE id=$1`, [id]);
+}
+
+/* ───────── Liên hệ & nhận tin ───────── */
+const toMsg = (r: Row): Message => ({ id: Number(r.id), name: String(r.name), email: String(r.email), phone: String(r.phone), subject: String(r.subject), message: String(r.message), handled: Boolean(r.handled), createdAt: new Date(r.created_at as string).toISOString() });
+export async function addMessage(m: Omit<Message, "id" | "handled" | "createdAt">) {
+  await ready();
+  if (!hasDatabase) { const x = mem(); x.messages.unshift({ ...m, id: x.messages.length + 1, handled: false, createdAt: new Date().toISOString() }); return; }
+  await q(`INSERT INTO messages (name,email,phone,subject,message) VALUES ($1,$2,$3,$4,$5)`, [m.name, m.email, m.phone, m.subject, m.message]);
+}
+export async function listMessages(): Promise<Message[]> {
+  await ready();
+  if (!hasDatabase) return [...mem().messages];
+  return (await q(`SELECT * FROM messages ORDER BY created_at DESC LIMIT 500`)).map(toMsg);
+}
+export async function setMessageHandled(id: number, handled: boolean) {
+  await ready();
+  if (!hasDatabase) { const x = mem().messages.find((v) => v.id === id); if (x) x.handled = handled; return; }
+  await q(`UPDATE messages SET handled=$2 WHERE id=$1`, [id, handled]);
+}
+export async function deleteMessage(id: number) {
+  await ready();
+  if (!hasDatabase) { const m = mem(); m.messages = m.messages.filter((v) => v.id !== id); return; }
+  await q(`DELETE FROM messages WHERE id=$1`, [id]);
+}
+export async function addSubscriber(email: string) {
+  await ready();
+  if (!hasDatabase) { const m = mem(); if (!m.subs.some((s) => s.email === email)) m.subs.unshift({ id: m.subs.length + 1, email, createdAt: new Date().toISOString() }); return; }
+  await q(`INSERT INTO subscribers (email) VALUES ($1) ON CONFLICT (email) DO NOTHING`, [email]);
+}
+export async function listSubscribers(): Promise<Subscriber[]> {
+  await ready();
+  if (!hasDatabase) return [...mem().subs];
+  return (await q(`SELECT * FROM subscribers ORDER BY created_at DESC`)).map((r) => ({ id: Number(r.id), email: String(r.email), createdAt: new Date(r.created_at as string).toISOString() }));
+}
+export async function deleteSubscriber(id: number) {
+  await ready();
+  if (!hasDatabase) { const m = mem(); m.subs = m.subs.filter((v) => v.id !== id); return; }
+  await q(`DELETE FROM subscribers WHERE id=$1`, [id]);
 }

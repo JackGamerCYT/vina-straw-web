@@ -81,3 +81,15 @@ export function BuyBox({ id, moq, unit }: { id: number; moq: number; unit: strin
     </div>
   );
 }
+
+/** Nút giỏ nhỏ trên thẻ sản phẩm: thêm đúng số lượng tối thiểu. */
+export function QuickAdd({ id, moq, name }: { id: number; moq: number; name: string }) {
+  const router = useRouter();
+  return (
+    <button type="button" aria-label={`Thêm ${name} vào giỏ`} title="Thêm vào giỏ"
+      onClick={() => { addToCart(id, moq); toast.success(`Đã thêm ${name}`, { action: { label: "Xem giỏ", onClick: () => router.push("/gio-hang") } }); }}
+      className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-leaf-100 text-leaf-700 transition hover:bg-leaf-700 hover:text-white">
+      <ShoppingBag className="h-5 w-5" />
+    </button>
+  );
+}

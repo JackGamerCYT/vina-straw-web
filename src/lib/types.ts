@@ -134,3 +134,18 @@ export const DEFAULT_SHOP: Shop = {
 export function shippingFor(shop: Shop, subtotal: number) {
   return shop.freeShipOver > 0 && subtotal >= shop.freeShipOver ? 0 : shop.shipFee;
 }
+
+export type Post = {
+  id: number;
+  slug: string;
+  title: string;
+  excerpt: string;
+  body: string;
+  cover: string;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+export type Message = { id: number; name: string; email: string; phone: string; subject: string; message: string; handled: boolean; createdAt: string };
+export type Subscriber = { id: number; email: string; createdAt: string };
+export const CONTACT_SUBJECTS = ["Hỏi về sản phẩm", "Báo giá số lượng lớn", "Hợp tác, đại lý", "Góp ý", "Khác"];

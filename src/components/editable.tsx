@@ -79,7 +79,7 @@ export function EditProvider({ admin, texts, media, children }: { admin: boolean
     <EditCtx.Provider value={value}>
       {children}
       {admin && (
-        <div data-edit-bar className="fixed bottom-4 left-1/2 z-[70] flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-center gap-1 overflow-x-auto rounded-full bg-ink p-1.5 text-sm text-white shadow-2xl">
+        <div data-edit-bar className="fixed bottom-20 lg:bottom-4 left-1/2 z-[70] flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-center gap-1 overflow-x-auto rounded-full bg-ink p-1.5 text-sm text-white shadow-2xl">
           {!editing ? (
             <>
               <span className="hidden px-3 text-white/60 sm:inline">Quản trị</span>
