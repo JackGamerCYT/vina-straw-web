@@ -100,6 +100,8 @@ export function CheckoutForm({ products, shop, me }: { products: Lite[]; shop: S
   const router = useRouter();
   const bank = Boolean(shop.bankName && shop.bankAccount && shop.bankHolder);
   const [method, setMethod] = useState<"COD" | "BANK">(shop.cod || !bank ? "COD" : "BANK");
+  const [placed, setPlaced] = useState(false);
+  if (placed) return <div className="mt-10 flex h-60 items-center justify-center rounded-3xl bg-sprout-soft/70 text-lg font-semibold text-leaf-700">Đặt hàng thành công, đang mở đơn hàng…</div>;
   if (!ready) return <div className="mt-10 h-60 animate-pulse rounded-3xl bg-mist" />;
   if (lines.length === 0) return <p className="mt-10 rounded-3xl bg-mist p-10 text-center text-ink-soft">Giỏ hàng trống. <Link href="/san-pham" className="font-semibold text-leaf-700 underline">Chọn sản phẩm</Link></p>;
   if (!shop.cod && !bank) return <p className="mt-10 rounded-3xl bg-straw-100 p-8 text-soil-900">Cửa hàng chưa mở thanh toán trực tuyến. Hãy <Link href="/bao-gia" className="font-semibold underline">gửi yêu cầu đặt hàng</Link>, chúng tôi sẽ gọi lại.</p>;
@@ -115,6 +117,7 @@ export function CheckoutForm({ products, shop, me }: { products: Lite[]; shop: S
         name: g("name"), phone: g("phone"), email: g("email"), address: g("address"), company: g("company"), note: g("note"), method,
       });
       if (r.error) { setErr(r.error); toast.error(r.error); return; }
+      setPlaced(true);
       clearCart();
       router.push(`/don-hang/${r.code}?k=${r.token}&moi=1`);
     });
