@@ -22,7 +22,7 @@ export function CarbonCalc({ products }: { products: P[] }) {
       <ul className="divide-y divide-ink/10 rounded-[28px] border border-ink/10 bg-white">
         {products.map((p) => {
           const n = q[p.id] ?? 0;
-          const step = p.moq >= 100 ? p.moq : 100;
+          const step = Math.max(1, p.moq);
           return (
             <li key={p.id} className="flex flex-wrap items-center gap-4 p-4 sm:flex-nowrap">
               <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-mist">{p.image && <Image src={p.image} alt="" fill sizes="56px" className={isRender(p.image) ? "object-contain p-1" : "object-cover"} unoptimized={p.image.startsWith("data:")} />}</span>

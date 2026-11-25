@@ -15,7 +15,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       "Mẫu túi thật đầu tiên của nhóm Vina-Straw, làm từ bột xơ rơm rạ. Bề mặt giữ lại sợi rơm tự nhiên nên mỗi chiếc có vân hơi khác nhau.\n\nHiện có hai kiểu: túi đứng có quai dây thừng và túi dẹt đục lỗ luồn dây. Kích thước, định lượng và giá đang được hoàn thiện. Gửi yêu cầu báo giá để nhận thông tin mới nhất và đặt mẫu thử.",
     price: 0,
     unit: "cái",
-    moq: 1,
+    moq: 10,
     specs: [
       { k: "Nguyên liệu", v: "Xơ rơm rạ" },
       { k: "Màu", v: "Trắng ngà, thấy sợi rơm" },
@@ -38,7 +38,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       "Tấm lót ép từ sợi rơm rạ, giữ màu vàng rơm tự nhiên. Có thể dùng để lót, chèn hàng trong hộp hoặc trang trí khi trưng bày sản phẩm.\n\nĐây là mẫu thử của nhóm. Kích thước, độ dày và giá đang được hoàn thiện. Gửi yêu cầu báo giá để nhận thông tin mới nhất.",
     price: 0,
     unit: "tấm",
-    moq: 1,
+    moq: 10,
     specs: [
       { k: "Nguyên liệu", v: "Sợi rơm rạ ép" },
       { k: "Màu", v: "Vàng rơm tự nhiên" },
@@ -60,7 +60,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       "Tô định hình từ xơ rơm rạ đã làm sạch, liên kết bằng hồ tinh bột và ép nóng trong khuôn kim loại. Mặt trong được tráng hai lớp sinh học VinaPack (pectin – sáp thực vật) để hạn chế thấm dầu và nước trong thời gian dùng bữa.\n\nPhù hợp cho quán bún, phở, cơm hộp và suất ăn văn phòng. Kích thước theo bản vẽ VS-DISH-201.",
     price: 2500,
     unit: "cái",
-    moq: 1000,
+    moq: 10,
     specs: [
       { k: "Dung tích", v: "500 mL" },
       { k: "Miệng ngoài", v: "Ø160 mm" },
@@ -83,7 +83,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       "Ly đúc từ bột xơ rơm, mép cuộn tròn để môi chạm êm. Lòng ly có lớp màng VinaPack giúp giữ nước uống lạnh trong suốt thời gian phục vụ. Dùng cho trà, nước ép, cà phê đá tại quán và sự kiện.",
     price: 1800,
     unit: "cái",
-    moq: 1000,
+    moq: 10,
     specs: [
       { k: "Dung tích danh nghĩa", v: "250 mL" },
       { k: "Miệng / đáy", v: "Ø82 / Ø58 mm" },
@@ -105,7 +105,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       "Chén có vòng chân đỡ giúp đứng vững trên khay, thành cong vừa tay cầm. Thiết kế xếp chồng để tiết kiệm chỗ khi vận chuyển và lưu kho.",
     price: 1900,
     unit: "cái",
-    moq: 1000,
+    moq: 10,
     specs: [
       { k: "Dung tích", v: "250 mL" },
       { k: "Miệng ngoài", v: "Ø120 mm" },
@@ -127,7 +127,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       "Dĩa ép nóng một lần, bề mặt mịn, vành rộng giúp cầm chắc khi bưng. Khe thoát khí của khuôn đặt ngoài vùng tiếp xúc thức ăn để mặt dĩa không bị in dấu.",
     price: 2200,
     unit: "cái",
-    moq: 1000,
+    moq: 10,
     specs: [
       { k: "Đường kính", v: "Ø220 mm" },
       { k: "Chiều cao", v: "22 mm" },
@@ -149,7 +149,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       "Túi đáy hộp gấp từ tấm xơ rơm – bã mía dày 0,6–1,0 mm, dán mép bằng hồ liên kết gốc tinh bột. Mặt trong có thể tráng VinaPack theo yêu cầu cho thực phẩm khô, bánh mì và đồ mang đi.\n\nIn logo một màu bằng mực gốc nước theo đơn hàng.",
     price: 3500,
     unit: "cái",
-    moq: 2000,
+    moq: 10,
     specs: [
       { k: "Mặt túi", v: "250 × 350 mm" },
       { k: "Hông mở", v: "60 mm (2 × 30)" },
@@ -171,7 +171,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       "Bộ đệm gồm vỏ rơm – bã mía định hình và lõi gân xơ rơm – xơ dừa, nén có kiểm soát để giảm va đập truyền vào hàng. Kèm khoang rời chứa túi zeolite điều hoà ẩm, tháo thay được.\n\nDùng cho chai thuỷ tinh rỗng, lọ mỹ phẩm, đồ gốm nhỏ. Không dùng tiếp xúc trực tiếp thực phẩm.",
     price: 6500,
     unit: "bộ",
-    moq: 500,
+    moq: 10,
     specs: [
       { k: "Khoang chai", v: "Ø96 × 170 mm (mẫu)" },
       { k: "Vỏ", v: "Rơm – bã mía, dày 3 mm" },
@@ -193,7 +193,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       "Màng một lớp đúc từ tinh bột, glycerol và vi xơ rơm, sấy trên băng tải rồi cuộn lên lõi giấy. Dùng để lót, bọc rau củ khô và gói quà. Độ dày và khổ màng điều chỉnh theo đơn.",
     price: 180000,
     unit: "cuộn",
-    moq: 20,
+    moq: 10,
     specs: [
       { k: "Khổ hữu dụng", v: "300 mm" },
       { k: "Độ dày khô", v: "0,20 – 0,30 mm" },
@@ -215,7 +215,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       "Tấm panel lõi rơm, xơ dừa và perlite, hai mặt phủ lớp khoáng mỏng khoảng 2 mm. Mép âm dương giúp ghép kín khe. Dùng làm vách lót cách nhiệt cho nhà kho, chuồng trại, ki-ốt. Không dùng làm cấu kiện chịu lực.",
     price: 145000,
     unit: "tấm",
-    moq: 50,
+    moq: 10,
     specs: [
       { k: "Kích thước", v: "600 × 1200 × 50 mm" },
       { k: "Lõi", v: "Rơm + xơ dừa + perlite, 46 mm" },

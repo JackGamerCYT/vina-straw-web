@@ -64,7 +64,7 @@ export function CartBadge() {
 export function BuyBox({ id, moq, unit, straw = 0 }: { id: number; moq: number; unit: string; straw?: number }) {
   const [qty, setQty] = useState(moq);
   const router = useRouter();
-  const step = moq >= 100 ? moq : 1;
+  const step = Math.max(1, moq);
   const add = (go: boolean) => {
     addToCart(id, qty);
     if (go) router.push("/gio-hang");

@@ -61,7 +61,7 @@ export function CartView({ products, shop }: { products: Lite[]; shop: Shop }) {
     <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_380px]">
       <ul className="divide-y divide-ink/10 rounded-[28px] border border-ink/10">
         {lines.map(({ id, qty, p }) => {
-          const step = p.moq >= 100 ? p.moq : 1;
+          const step = Math.max(1, p.moq);
           return (
             <li key={id} className="flex flex-wrap items-center gap-4 p-5 sm:flex-nowrap">
               <Thumb src={p.image} />

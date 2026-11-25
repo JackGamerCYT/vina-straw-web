@@ -133,6 +133,11 @@ MIGRATIONS.push({
     for (const p of SEED_PRODUCTS) await q(`UPDATE products SET straw_g=$2 WHERE slug=$1 AND straw_g=0`, [p.slug, p.strawGrams]);
   },
 });
+MIGRATIONS.push({
+  id: "2026-11-moq-10",
+  // Bán lẻ từ 10 cái cho mọi sản phẩm.
+  run: async () => { await q(`UPDATE products SET moq=10`); },
+});
 async function migrate() {
   const [row] = await q<{ value: string[] }>(`SELECT value FROM settings WHERE key='_migrations'`);
   const done = new Set(row?.value ?? []);
