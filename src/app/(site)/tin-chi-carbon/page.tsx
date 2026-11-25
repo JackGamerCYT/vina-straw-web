@@ -49,7 +49,6 @@ export default async function CarbonPage() {
               <li>Hệ số đốt lấy cận trên của dải đo trong các nghiên cứu (0,7–4,51 g CH4 và 0,019–0,069 g N2O mỗi kg rơm). Kết quả thực tế có thể thấp hơn.</li>
               <li>Lượng rơm trong mỗi sản phẩm là số ước tính ban đầu, sẽ được cập nhật khi cân mẫu thật.</li>
             </ul>
-            <p className="mt-5 text-sm">Nguồn: Romasanta và cộng sự (2017), Agriculture, Ecosystems &amp; Environment; Scientific Reports 9:17018 (2019); IPCC AR5 (hệ số GWP).</p>
             <Link href="/san-pham" className="btn-primary mt-6">Chọn sản phẩm</Link>
           </div>
         </section>

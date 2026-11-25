@@ -24,20 +24,36 @@ async function readOrderForm(f: FormData) {
   if (!/^[0-9+().\s-]{8,20}$/.test(phone)) return { error: "Số điện thoại chưa đúng định dạng." } as const;
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Email chưa đúng định dạng." } as const;
 
+  const sample = kind === "Đặt mẫu thử", partner = kind === "Hợp tác phân phối";
   const products = await db.listProducts();
   const items: OrderItem[] = [];
   for (const p of products) {
-    const qty = Math.max(0, Math.min(10_000_000, Math.floor(Number(f.get(`qty_${p.id}`) || 0))));
-    if (qty > 0) items.push({ productId: p.id, name: p.name, qty, unit: p.unit, price: p.price, straw: p.strawGrams });
+    let qty = Math.max(0, Math.min(10_000_000, Math.floor(Number(f.get(`qty_${p.id}`) || 0))));
+    if (sample) qty = f.get(`sample_${p.id}`) ? 1 : 0;
+    if (qty > 0) items.push({ productId: p.id, name: p.name, qty, unit: sample ? "bộ mẫu" : p.unit, price: sample ? 0 : p.price, straw: sample ? 0 : p.strawGrams });
   }
-  if (items.length === 0) return { error: "Chọn ít nhất một sản phẩm và số lượng." } as const;
+  if (sample && items.length === 0) return { error: "Chọn ít nhất một sản phẩm muốn nhận mẫu." } as const;
+  if (!sample && !partner && items.length === 0) return { error: "Chọn ít nhất một sản phẩm và số lượng." } as const;
+  if (sample && items.length > 6) return { error: "Mỗi lần nhận tối đa 6 mẫu." } as const;
+
+  const address = str(f, "address", 300);
+  if ((sample || kind === "Đặt hàng") && address.length < 6) return { error: "Nhập địa chỉ giao hàng." } as const;
+
+  let note = str(f, "note", 3000);
+  if (partner) {
+    const region = str(f, "region", 160), channel = str(f, "channel", 160), volume = str(f, "volume", 160);
+    if (region.length < 2) return { error: "Nhập khu vực bạn muốn phân phối." } as const;
+    const head = [`Khu vực phân phối: ${region}`, channel && `Kênh bán: ${channel}`, volume && `Sản lượng dự kiến / tháng: ${volume}`].filter(Boolean).join("\n");
+    note = note.replace(/^Khu vực phân phối:[\s\S]*?(\n\n|$)/, "");
+    note = head + (note ? "\n\n" + note : "");
+  }
 
   return {
     data: {
       kind, name, phone, email,
       company: str(f, "company", 160),
-      address: str(f, "address", 300),
-      note: str(f, "note", 3000),
+      address,
+      note,
       items,
     },
   } as const;
